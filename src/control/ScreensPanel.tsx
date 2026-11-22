@@ -41,11 +41,11 @@ export function ScreensPanel() {
 
   const suggestedId = useMemo(() => {
     const base = slugify(name) || 'screen';
-    const taken = new Set(screens.map((screen) => screen.id));
+    const taken = new Set(screens.map((s) => s.id));
     if (!taken.has(base)) return base;
-    let index = 2;
-    while (taken.has(`${base}-${index}`)) index += 1;
-    return `${base}-${index}`;
+    let i = 2;
+    while (taken.has(`${base}-${i}`)) i++;
+    return `${base}-${i}`;
   }, [name, screens]);
 
   const addScreen = async () => {
@@ -54,15 +54,8 @@ export function ScreensPanel() {
     setBusy(true);
     setError(null);
     try {
-      if (screens.some((screen) => screen.id === finalId)) {
-        throw new Error('A screen with that id already exists.');
-      }
-      await store.saveScreen({
-        id: finalId,
-        name: name.trim() || finalId,
-        assignedPageId: null,
-        createdAt: Date.now(),
-      });
+      if (screens.some((s) => s.id === finalId)) throw new Error('A screen with that ID already exists.');
+      await store.saveScreen({ id: finalId, name: name.trim() || finalId, assignedPageId: null, createdAt: Date.now() });
       setName('');
       setId('');
       setIdTouched(false);
@@ -89,149 +82,142 @@ export function ScreensPanel() {
   };
 
   const remove = async (screen: Screen) => {
-    if (!window.confirm(`Remove “${screen.name || screen.id}”? The screen will keep showing its last page.`)) return;
+    if (!window.confirm(`Remove "${screen.name || screen.id}"? The screen will keep showing its last page.`)) return;
     await store.deleteScreen(screen.id);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 pb-10">
       <Section
         title="Add a screen"
-        description="Give each TV a short id. Open the URL below on that device and add it to the browser's kiosk startup."
+        description="Each TV or display needs a unique ID. Open the URL on that device in a full-screen browser."
       >
-        <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-          <Field label="Name">
+        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+          <Field label="Screen name" help="Something like 'Reception TV' or 'Hall screen'.">
             <Input
               value={name}
               placeholder="Reception TV"
-              onChange={(event) => {
-                setName(event.target.value);
-                if (!idTouched) setId(slugify(event.target.value));
+              onChange={(e) => {
+                setName(e.target.value);
+                if (!idTouched) setId(slugify(e.target.value));
               }}
             />
           </Field>
-          <Field label="Screen id" help="Used in the public URL. Letters, numbers and dashes.">
+          <Field label="URL slug" help="Used in the web address. Letters, numbers and dashes only.">
             <Input
               value={id || suggestedId}
-              onChange={(event) => {
+              onChange={(e) => {
                 setIdTouched(true);
-                setId(event.target.value);
+                setId(e.target.value);
               }}
             />
           </Field>
           <div className="flex items-end">
             <Button variant="primary" onClick={() => void addScreen()} disabled={busy}>
-              <Plus size={14} /> Add
+              <Plus size={14} /> Add screen
             </Button>
           </div>
         </div>
-        {error ? <p className="text-xs text-rose-300">{error}</p> : null}
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </Section>
 
       {sorted.length === 0 ? (
         <EmptyState
           title="No screens yet"
-          body="Screens appear here after they load their URL for the first time. You can also add one above to get its link."
+          body="Add a screen above, then open its URL on your TV or display in a kiosk-mode browser."
           action={
-            <Button onClick={() => void addScreen()}>
+            <Button variant="primary" onClick={() => void addScreen()}>
               <MonitorSmartphone size={14} /> Add a screen
             </Button>
           }
         />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {sorted.map((screen) => {
             const online = Boolean(screen.lastSeen && now.getTime() - screen.lastSeen < ONLINE_MS);
             const url = `${origin}/screen/${screen.id}`;
             return (
-              <div key={screen.id} className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3">
+              <div key={screen.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-semibold text-slate-100">{screen.name || screen.id}</span>
-                      <Badge tone={online ? 'green' : 'neutral'}>{online ? 'Online' : 'Offline'}</Badge>
+                      <span className="text-base font-semibold text-stone-900">{screen.name || screen.id}</span>
+                      <Badge tone={online ? 'green' : 'neutral'}>{online ? '● Online' : 'Offline'}</Badge>
                     </div>
-                    <div className="mt-0.5 text-[11px] text-slate-500">
-                      <code className="text-slate-400">{screen.id}</code> · {lastSeenLabel(screen.lastSeen, now.getTime())}
+                    <div className="mt-0.5 text-xs text-stone-400">
+                      {screen.id} · {lastSeenLabel(screen.lastSeen, now.getTime())}
                       {screen.meta?.width ? ` · ${screen.meta.width}×${screen.meta.height}` : ''}
                     </div>
                   </div>
-
                   <div className="flex items-center gap-1">
-                    <IconButton label="Copy screen URL" onClick={() => void copy(screen.id)}>
-                      {copied === screen.id ? <Check size={14} className="text-emerald-300" /> : <Copy size={14} />}
+                    <IconButton label="Copy URL" onClick={() => void copy(screen.id)}>
+                      {copied === screen.id ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
                     </IconButton>
                     <a
                       href={url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
                       title="Open screen"
                     >
                       <ExternalLink size={14} />
                     </a>
-                    <IconButton label="Remove screen" onClick={() => void remove(screen)} className="hover:text-rose-300">
+                    <IconButton label="Remove screen" onClick={() => void remove(screen)} className="hover:text-red-500">
                       <Trash2 size={14} />
                     </IconButton>
                   </div>
                 </div>
 
-                <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,14rem)_auto_1fr]">
-                  <Field label="Assigned page">
+                <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,13rem)_1fr]">
+                  <Field label="Show this page" help="Leave blank to use rotation or the default page.">
                     <Select
                       value={screen.assignedPageId ?? ''}
-                      onChange={(event) =>
-                        void store.saveScreen({ ...screen, assignedPageId: event.target.value || null })
-                      }
+                      onChange={(e) => void store.saveScreen({ ...screen, assignedPageId: e.target.value || null })}
                     >
-                      <option value="">Rotation / start page</option>
+                      <option value="">Rotation / default</option>
                       {pages.map((page) => (
-                        <option key={page.id} value={page.id}>
-                          {page.name}
-                        </option>
+                        <option key={page.id} value={page.id}>{page.name}</option>
                       ))}
                     </Select>
                   </Field>
-
-                  <div className="flex items-end">
-                    <Select
-                      className="w-auto"
-                      value=""
-                      onChange={(event) => {
-                        const pageId = event.target.value;
-                        if (pageId) command(screen, 'goto', { pageId });
-                        event.target.value = '';
-                      }}
-                    >
-                      <option value="">Go to page…</option>
-                      {pages.map((page) => (
-                        <option key={page.id} value={page.id}>
-                          {page.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-
-                  <div className="flex flex-wrap items-end justify-start gap-1.5 sm:justify-end">
-                    <Button size="sm" onClick={() => command(screen, 'reload')} title="Reload the browser">
-                      <RefreshCw size={13} /> Reload
-                    </Button>
-                    <Button size="sm" onClick={() => command(screen, 'identify')} title="Show this screen's name">
-                      <ScanEye size={13} /> Identify
-                    </Button>
-                    <Button size="sm" onClick={() => command(screen, 'blank')} title="Blank for one minute">
-                      Blank
-                    </Button>
-                    <Button size="sm" onClick={() => command(screen, 'clear-cache')} title="Clear cached files and reload">
-                      <Wand2 size={13} /> Clear cache
-                    </Button>
+                  <div>
+                    <div className="mb-1.5 text-sm font-medium text-stone-700">Remote controls</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Select
+                        className="h-8 w-auto text-xs"
+                        value=""
+                        onChange={(e) => {
+                          const pageId = e.target.value;
+                          if (pageId) command(screen, 'goto', { pageId });
+                          e.target.value = '';
+                        }}
+                      >
+                        <option value="">Jump to page…</option>
+                        {pages.map((page) => (
+                          <option key={page.id} value={page.id}>{page.name}</option>
+                        ))}
+                      </Select>
+                      <Button size="sm" onClick={() => command(screen, 'reload')}>
+                        <RefreshCw size={12} /> Reload
+                      </Button>
+                      <Button size="sm" onClick={() => command(screen, 'identify')}>
+                        <ScanEye size={12} /> Identify
+                      </Button>
+                      <Button size="sm" onClick={() => command(screen, 'blank')}>
+                        Blank 1 min
+                      </Button>
+                      <Button size="sm" onClick={() => command(screen, 'clear-cache')}>
+                        <Wand2 size={12} /> Clear cache
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-black/25 px-2 py-1.5">
-                  <code className="min-w-0 flex-1 truncate text-[11px] text-slate-400">{url}</code>
+                {/* URL bar */}
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-stone-50 border border-stone-200 px-3 py-2">
+                  <code className="min-w-0 flex-1 truncate text-xs text-stone-500">{url}</code>
                   <Button size="sm" variant="ghost" onClick={() => void copy(screen.id)}>
-                    {copied === screen.id ? 'Copied' : 'Copy'}
+                    {copied === screen.id ? 'Copied!' : 'Copy'}
                   </Button>
                 </div>
               </div>

@@ -20,7 +20,7 @@ import { useBoard } from '@/lib/board';
 import { useAuth } from '@/lib/auth';
 import { DEMO } from '@/lib/store';
 import { cn } from '@/lib/cn';
-import { Badge, Button, IconButton, Select } from '@/components/ui';
+import { Badge, Button, IconButton } from '@/components/ui';
 import { Canvas } from './Canvas';
 import { Inspector } from './Inspector';
 import { PagesPanel } from './PagesPanel';
@@ -40,7 +40,8 @@ const TABS: { id: Tab; label: string; icon: typeof LayoutGrid }[] = [
 ];
 
 export function ControlApp() {
-  const { config, loading, saveState, error, canUndo, canRedo, mutate, beginHistory, undo, redo, createBoard } = useBoard();
+  const { config, loading, saveState, error, canUndo, canRedo, mutate, beginHistory, undo, redo, createBoard } =
+    useBoard();
   const { signOut } = useAuth();
   const [tab, setTab] = useState<Tab>('pages');
   const [activePageId, setActivePageId] = useState<string | null>(null);
@@ -48,9 +49,9 @@ export function ControlApp() {
 
   useEffect(() => {
     if (!config) return;
-    const exists = activePageId && config.pages.some((page) => page.id === activePageId);
+    const exists = activePageId && config.pages.some((p) => p.id === activePageId);
     if (exists) return;
-    const fallback = config.pages.find((page) => page.id === config.settings.defaultPageId) ?? config.pages[0];
+    const fallback = config.pages.find((p) => p.id === config.settings.defaultPageId) ?? config.pages[0];
     setActivePageId(fallback?.id ?? null);
   }, [config, activePageId]);
 
@@ -59,13 +60,13 @@ export function ControlApp() {
   }, [activePageId]);
 
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
       if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
-      const mod = event.metaKey || event.ctrlKey;
-      if (!mod || event.key.toLowerCase() !== 'z') return;
-      event.preventDefault();
-      if (event.shiftKey) redo();
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod || e.key.toLowerCase() !== 'z') return;
+      e.preventDefault();
+      if (e.shiftKey) redo();
       else undo();
     };
     window.addEventListener('keydown', onKey);
@@ -74,7 +75,7 @@ export function ControlApp() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#080a11] text-sm text-slate-500">
+      <div className="cb-control flex min-h-screen items-center justify-center text-sm text-stone-400">
         Loading your board…
       </div>
     );
@@ -82,14 +83,14 @@ export function ControlApp() {
 
   if (!config) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#080a11] px-6 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-300">
-          <LayoutGrid size={22} />
+      <div className="cb-control flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+          <LayoutGrid size={24} />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-white">No board yet</h1>
-          <p className="mt-1 max-w-sm text-sm text-slate-500">
-            Create the first board to start adding pages and cards. Screens will pick it up straight away.
+          <h1 className="text-2xl font-bold text-stone-900">No board yet</h1>
+          <p className="mt-1 max-w-sm text-sm text-stone-500">
+            Create a board to start adding pages and cards. Screens will pick it up straight away.
           </p>
         </div>
         <Button variant="primary" size="lg" onClick={() => void createBoard()}>
@@ -102,7 +103,7 @@ export function ControlApp() {
     );
   }
 
-  const activePage = config.pages.find((page) => page.id === activePageId) ?? config.pages[0] ?? null;
+  const activePage = config.pages.find((p) => p.id === activePageId) ?? config.pages[0] ?? null;
 
   const addPage = () => {
     const id = newId('page');
@@ -115,15 +116,15 @@ export function ControlApp() {
   };
 
   const duplicatePage = (pageId: string) => {
-    const source = config.pages.find((page) => page.id === pageId);
+    const source = config.pages.find((p) => p.id === pageId);
     if (!source) return;
     const id = newId('page');
     const copy = structuredClone(source);
     copy.id = id;
     copy.name = `${source.name} copy`;
-    copy.cards = copy.cards.map((card) => ({ ...card, id: newId('card') }));
+    copy.cards = copy.cards.map((c) => ({ ...c, id: newId('card') }));
     mutate((draft) => {
-      const index = draft.pages.findIndex((page) => page.id === pageId);
+      const index = draft.pages.findIndex((p) => p.id === pageId);
       draft.pages.splice(index + 1, 0, copy);
     });
     setActivePageId(id);
@@ -131,13 +132,14 @@ export function ControlApp() {
 
   const deletePage = (pageId: string) => {
     if (config.pages.length <= 1) return;
-    const page = config.pages.find((item) => item.id === pageId);
+    const page = config.pages.find((p) => p.id === pageId);
     if (!page) return;
-    if (!window.confirm(`Delete “${page.name}” and its ${page.cards.length} card${page.cards.length === 1 ? '' : 's'}?`)) return;
-    const nextPage = config.pages.find((item) => item.id !== pageId);
+    if (!window.confirm(`Delete "${page.name}"? This removes all ${page.cards.length} card${page.cards.length === 1 ? '' : 's'} on it.`))
+      return;
+    const nextPage = config.pages.find((p) => p.id !== pageId);
     mutate((draft) => {
-      draft.pages = draft.pages.filter((item) => item.id !== pageId);
-      if (!draft.pages.some((item) => item.id === draft.settings.defaultPageId)) {
+      draft.pages = draft.pages.filter((p) => p.id !== pageId);
+      if (!draft.pages.some((p) => p.id === draft.settings.defaultPageId)) {
         draft.settings.defaultPageId = draft.pages[0]?.id ?? '';
       }
       draft.settings.rotation.pageIds = draft.settings.rotation.pageIds.filter((id) => id !== pageId);
@@ -147,7 +149,7 @@ export function ControlApp() {
 
   const movePage = (pageId: string, direction: -1 | 1) => {
     mutate((draft) => {
-      const index = draft.pages.findIndex((page) => page.id === pageId);
+      const index = draft.pages.findIndex((p) => p.id === pageId);
       const target = index + direction;
       if (index < 0 || target < 0 || target >= draft.pages.length) return;
       const [page] = draft.pages.splice(index, 1);
@@ -167,15 +169,9 @@ export function ControlApp() {
     const layout = findFreeSpot(activePage.cards, def.defaultSize.w, def.defaultSize.h);
     const id = newId('card');
     mutate((draft) => {
-      const page = draft.pages.find((item) => item.id === activePage.id);
+      const page = draft.pages.find((p) => p.id === activePage.id);
       if (!page) return;
-      page.cards.push({
-        id,
-        type,
-        layout,
-        visible: true,
-        config: defaultCardConfig(type),
-      });
+      page.cards.push({ id, type, layout, visible: true, config: defaultCardConfig(type) });
     });
     setSelectedCardId(id);
   };
@@ -183,8 +179,8 @@ export function ControlApp() {
   const updateLayout = (cardId: string, layout: Rect) => {
     mutate(
       (draft) => {
-        const page = draft.pages.find((item) => item.id === activePage?.id);
-        const card = page?.cards.find((item) => item.id === cardId);
+        const page = draft.pages.find((p) => p.id === activePage?.id);
+        const card = page?.cards.find((c) => c.id === cardId);
         if (card) card.layout = layout;
       },
       { history: false },
@@ -192,34 +188,51 @@ export function ControlApp() {
   };
 
   const saveLabel =
-    saveState === 'saving' ? 'Saving…' : saveState === 'error' ? 'Save failed' : saveState === 'saved' ? 'Saved' : 'Ready';
+    saveState === 'saving'
+      ? 'Saving…'
+      : saveState === 'error'
+        ? 'Save failed'
+        : saveState === 'saved'
+          ? 'Saved'
+          : 'Ready';
+
+  const saveDot =
+    saveState === 'error'
+      ? 'bg-red-400'
+      : saveState === 'saving'
+        ? 'bg-amber-400 animate-pulse'
+        : 'bg-emerald-500';
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#080a11] text-slate-200">
-      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.07] bg-[#080a11]/95 px-3 backdrop-blur sm:px-4">
+    <div className="cb-control flex min-h-dvh flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-stone-200 bg-white px-3 shadow-sm sm:px-5">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-300">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
             <LayoutGrid size={16} />
           </div>
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold leading-tight text-white">{config.settings.name}</div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-500">Control</div>
+            <div className="truncate text-sm font-bold leading-tight text-stone-900">{config.settings.name}</div>
+            <div className="text-[10px] text-stone-400">Control panel</div>
           </div>
           {DEMO ? <Badge tone="amber">Demo</Badge> : null}
         </div>
 
-        <nav className="ml-2 hidden flex-1 items-center gap-0.5 md:flex">
+        {/* Desktop nav */}
+        <nav className="ml-3 hidden flex-1 items-center gap-0.5 md:flex">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => setTab(id)}
               className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition',
-                tab === id ? 'bg-white/[0.08] text-white' : 'text-slate-400 hover:bg-white/[0.05] hover:text-slate-200',
+                'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition',
+                tab === id
+                  ? 'bg-amber-50 text-amber-700'
+                  : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800',
               )}
             >
-              <Icon size={13} />
+              <Icon size={14} />
               {label}
             </button>
           ))}
@@ -227,13 +240,8 @@ export function ControlApp() {
 
         <div className="ml-auto flex items-center gap-1.5">
           <div className="hidden items-center gap-1.5 sm:flex">
-            <span
-              className={cn(
-                'h-1.5 w-1.5 rounded-full',
-                saveState === 'error' ? 'bg-rose-400' : saveState === 'saving' ? 'bg-amber-300' : 'bg-emerald-400',
-              )}
-            />
-            <span className="text-[11px] text-slate-500">{saveLabel}</span>
+            <span className={cn('h-2 w-2 rounded-full', saveDot)} />
+            <span className="text-xs text-stone-400">{saveLabel}</span>
           </div>
           <IconButton label="Undo" onClick={undo} disabled={!canUndo}>
             <Undo2 size={14} />
@@ -245,7 +253,7 @@ export function ControlApp() {
             href="/"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 text-xs font-medium text-slate-200 transition hover:bg-white/[0.11]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-600 shadow-sm transition hover:bg-stone-50"
           >
             <ExternalLink size={13} />
             <span className="hidden sm:inline">View display</span>
@@ -256,15 +264,16 @@ export function ControlApp() {
         </div>
       </header>
 
-      <nav className="flex items-center gap-1 overflow-x-auto border-b border-white/[0.06] px-2 py-1.5 md:hidden">
+      {/* Mobile nav */}
+      <nav className="flex items-center gap-1 overflow-x-auto border-b border-stone-200 bg-white px-2 py-1.5 md:hidden">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
             onClick={() => setTab(id)}
             className={cn(
-              'inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium',
-              tab === id ? 'bg-white/[0.08] text-white' : 'text-slate-400',
+              'inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
+              tab === id ? 'bg-amber-50 text-amber-700' : 'text-stone-500',
             )}
           >
             <Icon size={12} />
@@ -274,11 +283,12 @@ export function ControlApp() {
       </nav>
 
       {error ? (
-        <div className="border-b border-rose-400/20 bg-rose-500/10 px-4 py-2 text-xs text-rose-200">{error}</div>
+        <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">{error}</div>
       ) : null}
 
+      {/* Pages tab */}
       {tab === 'pages' && activePage ? (
-        <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[15rem_minmax(0,1fr)] 2xl:grid-cols-[15rem_minmax(0,1fr)_21rem]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[14rem_minmax(0,1fr)] 2xl:grid-cols-[14rem_minmax(0,1fr)_20rem]">
           <PagesPanel
             className="hidden xl:flex"
             pages={config.pages}
@@ -293,27 +303,24 @@ export function ControlApp() {
           />
 
           <div className="flex min-h-0 flex-col overflow-y-auto">
-            <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.06] px-3 py-2 xl:hidden">
-              <Select
-                className="w-auto min-w-40"
+            {/* Mobile page picker */}
+            <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 bg-white px-3 py-2 xl:hidden">
+              <select
+                className="h-9 flex-1 appearance-none rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-800 outline-none focus:border-amber-400"
                 value={activePage.id}
-                onChange={(event) => setActivePageId(event.target.value)}
+                onChange={(e) => setActivePageId(e.target.value)}
               >
                 {config.pages.map((page) => (
                   <option key={page.id} value={page.id}>
                     {page.name}
                   </option>
                 ))}
-              </Select>
-              <Button size="sm" onClick={addPage}>
-                <Plus size={13} /> Page
+              </select>
+              <Button size="sm" variant="primary" onClick={addPage}>
+                <Plus size={13} /> Add page
               </Button>
-              {activePage.id !== config.settings.defaultPageId ? (
-                <Button size="sm" variant="ghost" onClick={() => makeDefault(activePage.id)}>
-                  Make start page
-                </Button>
-              ) : null}
             </div>
+
             <div className="flex min-h-[560px] flex-1 flex-col p-3 sm:p-4">
               <Canvas
                 page={activePage}
@@ -326,36 +333,36 @@ export function ControlApp() {
             </div>
           </div>
 
-          <aside className="hidden min-h-0 overflow-y-auto border-l border-white/[0.06] p-4 2xl:block">
+          <aside className="hidden min-h-0 overflow-y-auto border-l border-stone-200 bg-stone-50 p-4 2xl:block">
             <Inspector page={activePage} selectedId={selectedCardId} onSelect={setSelectedCardId} />
           </aside>
 
-          <div className="border-t border-white/[0.06] p-4 2xl:hidden">
+          <div className="border-t border-stone-200 bg-stone-50 p-4 2xl:hidden">
             <Inspector page={activePage} selectedId={selectedCardId} onSelect={setSelectedCardId} />
           </div>
         </div>
       ) : null}
 
       {tab === 'theme' ? (
-        <main className="mx-auto w-full max-w-3xl p-4 sm:p-6">
+        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
           <ThemePanel />
         </main>
       ) : null}
 
       {tab === 'screens' ? (
-        <main className="mx-auto w-full max-w-3xl p-4 sm:p-6">
+        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
           <ScreensPanel />
         </main>
       ) : null}
 
       {tab === 'announcements' ? (
-        <main className="mx-auto w-full max-w-3xl p-4 sm:p-6">
+        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
           <AnnouncementsPanel />
         </main>
       ) : null}
 
       {tab === 'settings' ? (
-        <main className="mx-auto w-full max-w-3xl p-4 sm:p-6">
+        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
           <SettingsPanel />
         </main>
       ) : null}

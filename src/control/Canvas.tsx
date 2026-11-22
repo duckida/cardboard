@@ -31,7 +31,6 @@ export function Canvas({
   const cellW = metrics.colW + metrics.gap;
   const cellH = metrics.rowH + metrics.gap;
 
-  // Keep a 16:9 stage inside whatever room the panel has.
   const stageWidth = Math.max(0, Math.min(stageSize.width, (stageSize.height * 16) / 9));
   const stageHeight = (stageWidth * 9) / 16;
 
@@ -39,14 +38,14 @@ export function Canvas({
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Palette onAdd={onAddCard} />
-        <div className="text-[11px] text-slate-500">
-          {page.cards.length} card{page.cards.length === 1 ? '' : 's'} · drag to move, corner to resize
+        <div className="text-xs text-stone-400">
+          {page.cards.length} widget{page.cards.length === 1 ? '' : 's'} · drag to move, corner to resize
         </div>
       </div>
 
       <div
         ref={stageRef}
-        className="relative flex min-h-[320px] flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/[0.06] bg-black/20 p-3"
+        className="relative flex min-h-[320px] flex-1 items-center justify-center overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 p-3 shadow-inner"
       >
         <div
           className="cb-canvas relative overflow-hidden rounded-xl"
@@ -77,7 +76,7 @@ export function Canvas({
               />
             </DisplayContext.Provider>
           ) : null}
-          <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-black/40 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-slate-400 backdrop-blur">
+          <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-black/40 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-white/80 backdrop-blur">
             {page.name}
           </div>
         </div>

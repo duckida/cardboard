@@ -1,6 +1,6 @@
-import { Copy, Plus, Star, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Plus, Star, Trash2 } from 'lucide-react';
 import type { Page } from '@shared/types';
-import { IconButton, Label } from '@/components/ui';
+import { IconButton } from '@/components/ui';
 import { cn } from '@/lib/cn';
 
 export function PagesPanel({
@@ -27,12 +27,16 @@ export function PagesPanel({
   className?: string;
 }) {
   return (
-    <div className={cn('flex flex-col gap-2 border-r border-white/[0.06] bg-black/20 p-3', className)}>
-      <div className="flex items-center justify-between px-1">
-        <Label>Pages</Label>
-        <IconButton label="Add page" onClick={onAddPage}>
-          <Plus size={14} />
-        </IconButton>
+    <div className={cn('flex flex-col gap-2 border-r border-stone-200 bg-stone-50 p-3', className)}>
+      <div className="flex items-center justify-between px-1 py-1">
+        <span className="text-xs font-semibold text-stone-500">Pages</span>
+        <button
+          type="button"
+          onClick={onAddPage}
+          className="inline-flex h-7 items-center gap-1 rounded-lg bg-amber-500 px-2.5 text-xs font-medium text-white transition hover:bg-amber-400"
+        >
+          <Plus size={12} /> Add
+        </button>
       </div>
 
       <div className="space-y-1">
@@ -45,8 +49,8 @@ export function PagesPanel({
               className={cn(
                 'group rounded-xl border px-2 py-2 transition',
                 active
-                  ? 'border-indigo-400/30 bg-indigo-500/10'
-                  : 'border-transparent hover:border-white/10 hover:bg-white/[0.04]',
+                  ? 'border-amber-300 bg-amber-50'
+                  : 'border-transparent hover:border-stone-200 hover:bg-white',
               )}
             >
               <button
@@ -56,17 +60,17 @@ export function PagesPanel({
               >
                 <span
                   className={cn(
-                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-semibold',
-                    active ? 'bg-indigo-500/25 text-indigo-200' : 'bg-white/[0.06] text-slate-400',
+                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold',
+                    active ? 'bg-amber-200 text-amber-800' : 'bg-stone-200 text-stone-500',
                   )}
                 >
                   {index + 1}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-xs font-medium text-slate-200">{page.name}</span>
-                  <span className="block text-[10px] text-slate-500">
+                  <span className="block truncate text-sm font-medium text-stone-800">{page.name}</span>
+                  <span className="block text-xs text-stone-400">
                     {page.cards.length} card{page.cards.length === 1 ? '' : 's'}
-                    {isDefault ? ' · start' : ''}
+                    {isDefault ? ' · default' : ''}
                   </span>
                 </span>
               </button>
@@ -75,29 +79,24 @@ export function PagesPanel({
                 <IconButton label="Move up" disabled={index === 0} onClick={() => onMovePage(page.id, -1)} className="h-6 w-6">
                   <ChevronUp size={12} />
                 </IconButton>
-                <IconButton
-                  label="Move down"
-                  disabled={index === pages.length - 1}
-                  onClick={() => onMovePage(page.id, 1)}
-                  className="h-6 w-6"
-                >
+                <IconButton label="Move down" disabled={index === pages.length - 1} onClick={() => onMovePage(page.id, 1)} className="h-6 w-6">
                   <ChevronDown size={12} />
                 </IconButton>
                 <IconButton
-                  label="Make start page"
+                  label="Set as default"
                   onClick={() => onMakeDefault(page.id)}
-                  className={cn('h-6 w-6', isDefault && 'text-amber-300')}
+                  className={cn('h-6 w-6', isDefault && 'text-amber-500')}
                 >
                   <Star size={12} />
                 </IconButton>
-                <IconButton label="Duplicate page" onClick={() => onDuplicatePage(page.id)} className="h-6 w-6">
+                <IconButton label="Duplicate" onClick={() => onDuplicatePage(page.id)} className="h-6 w-6">
                   <Copy size={12} />
                 </IconButton>
                 <IconButton
-                  label="Delete page"
+                  label="Delete"
                   disabled={pages.length <= 1}
                   onClick={() => onDeletePage(page.id)}
-                  className="h-6 w-6 hover:text-rose-300"
+                  className="h-6 w-6 hover:text-red-500"
                 >
                   <Trash2 size={12} />
                 </IconButton>
@@ -107,8 +106,8 @@ export function PagesPanel({
         })}
       </div>
 
-      <p className="mt-auto px-1 pt-3 text-[10px] leading-relaxed text-slate-600">
-        The start page shows when nothing else is assigned. Rotation can cycle through any pages you pick.
+      <p className="mt-auto px-1 pt-3 text-xs leading-relaxed text-stone-400">
+        The default page shows on screens that aren't assigned to anything specific.
       </p>
     </div>
   );

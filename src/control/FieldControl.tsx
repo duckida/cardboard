@@ -1,5 +1,5 @@
 import type { Field } from '@shared/types';
-import { Input, Label, Select, Textarea, Toggle } from '@/components/ui';
+import { Input, Select, Textarea, Toggle } from '@/components/ui';
 import { ImagesEditor } from './ImagesEditor';
 
 const TIMEZONES = [
@@ -32,8 +32,8 @@ export function FieldControl({
     return (
       <div className="flex items-center justify-between gap-3 py-0.5">
         <div>
-          <div className="text-xs font-medium text-slate-300">{field.label}</div>
-          {field.help ? <p className="mt-0.5 text-[11px] text-slate-500">{field.help}</p> : null}
+          <div className="text-sm font-medium text-stone-700">{field.label}</div>
+          {field.help ? <p className="mt-0.5 text-xs text-stone-500">{field.help}</p> : null}
         </div>
         <Toggle checked={Boolean(value)} onChange={onChange} label={field.label} />
       </div>
@@ -42,7 +42,7 @@ export function FieldControl({
 
   return (
     <div className="space-y-1.5">
-      <Label>{field.label}</Label>
+      <div className="text-sm font-medium text-stone-700">{field.label}</div>
       {field.type === 'images' ? (
         <ImagesEditor
           value={(value as { url: string; caption?: string }[]) ?? []}
@@ -52,11 +52,11 @@ export function FieldControl({
         <Input
           value={Array.isArray(value) ? value.join(', ') : ''}
           placeholder="Sport, Music"
-          onChange={(event) =>
+          onChange={(e) =>
             onChange(
-              event.target.value
+              e.target.value
                 .split(',')
-                .map((part) => part.trim())
+                .map((s) => s.trim())
                 .filter(Boolean),
             )
           }
@@ -65,13 +65,13 @@ export function FieldControl({
         <Textarea
           value={String(value ?? '')}
           placeholder={field.placeholder}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(e) => onChange(e.target.value)}
         />
       ) : field.type === 'select' ? (
-        <Select value={String(value ?? '')} onChange={(event) => onChange(event.target.value)}>
-          {field.options?.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+        <Select value={String(value ?? '')} onChange={(e) => onChange(e.target.value)}>
+          {field.options?.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
             </option>
           ))}
         </Select>
@@ -82,17 +82,17 @@ export function FieldControl({
           min={field.min}
           max={field.max}
           step={field.step ?? 1}
-          onChange={(event) => onChange(Number(event.target.value))}
+          onChange={(e) => onChange(Number(e.target.value))}
         />
       ) : field.type === 'color' ? (
         <div className="flex items-center gap-2">
           <input
             type="color"
             value={String(value ?? '#000000')}
-            onChange={(event) => onChange(event.target.value)}
-            className="h-9 w-10 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent p-1"
+            onChange={(e) => onChange(e.target.value)}
+            className="h-9 w-10 shrink-0 cursor-pointer rounded-lg border border-stone-200 bg-white p-1"
           />
-          <Input value={String(value ?? '')} onChange={(event) => onChange(event.target.value)} />
+          <Input value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} />
         </div>
       ) : field.type === 'timezone' ? (
         <>
@@ -100,7 +100,7 @@ export function FieldControl({
             list="cb-timezones"
             value={String(value ?? '')}
             placeholder={field.placeholder}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={(e) => onChange(e.target.value)}
           />
           <datalist id="cb-timezones">
             {TIMEZONES.map((zone) => (
@@ -113,10 +113,10 @@ export function FieldControl({
           type={field.type === 'url' ? 'url' : 'text'}
           value={String(value ?? '')}
           placeholder={field.placeholder}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(e) => onChange(e.target.value)}
         />
       )}
-      {field.help ? <p className="text-[11px] leading-snug text-slate-500">{field.help}</p> : null}
+      {field.help ? <p className="text-xs leading-snug text-stone-400">{field.help}</p> : null}
     </div>
   );
 }
@@ -139,12 +139,11 @@ export function Slider({
   suffix?: string;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label>{label}</Label>
-        <span className="text-[11px] tabular-nums text-slate-400">
-          {value}
-          {suffix}
+        <span className="text-sm font-medium text-stone-700">{label}</span>
+        <span className="text-sm tabular-nums text-stone-500">
+          {value}{suffix}
         </span>
       </div>
       <input
@@ -153,8 +152,7 @@ export function Slider({
         max={max}
         step={step}
         value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-indigo-400"
+        onChange={(e) => onChange(Number(e.target.value))}
       />
     </div>
   );

@@ -4,7 +4,7 @@ import type { CardType } from '@shared/types';
 export function Palette({ onAdd }: { onAdd: (type: CardType) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">Add</span>
+      <span className="mr-1 text-xs font-semibold text-stone-400">Add widget</span>
       {CARD_LIST.map((def) => {
         const Icon = def.icon;
         return (
@@ -12,7 +12,7 @@ export function Palette({ onAdd }: { onAdd: (type: CardType) => void }) {
             key={def.type}
             type="button"
             onClick={() => onAdd(def.type)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-indigo-400/30 hover:bg-indigo-500/10 hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-600 shadow-sm transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
             title={def.description}
           >
             <Icon size={13} />
