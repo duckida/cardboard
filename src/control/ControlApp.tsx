@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ExternalLink,
+  Layers,
   LayoutGrid,
   LogOut,
   Megaphone,
@@ -24,15 +25,17 @@ import { Badge, Button, IconButton } from '@/components/ui';
 import { Canvas } from './Canvas';
 import { Inspector } from './Inspector';
 import { PagesPanel } from './PagesPanel';
+import { PagesOverviewPanel } from './PagesOverviewPanel';
 import { ThemePanel } from './ThemePanel';
 import { ScreensPanel } from './ScreensPanel';
 import { AnnouncementsPanel } from './AnnouncementsPanel';
 import { SettingsPanel } from './SettingsPanel';
 
-type Tab = 'pages' | 'theme' | 'screens' | 'announcements' | 'settings';
+type Tab = 'pages' | 'layout' | 'theme' | 'screens' | 'announcements' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: typeof LayoutGrid }[] = [
-  { id: 'pages', label: 'Pages', icon: LayoutGrid },
+  { id: 'pages', label: 'Pages', icon: Layers },
+  { id: 'layout', label: 'Layout', icon: LayoutGrid },
   { id: 'theme', label: 'Theme', icon: Palette },
   { id: 'screens', label: 'Screens', icon: MonitorSmartphone },
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
@@ -112,7 +115,12 @@ export function ControlApp() {
       draft.pages.push({ id, name, transition: 'fade', cards: [] });
     });
     setActivePageId(id);
-    setTab('pages');
+    setTab('layout');
+  };
+
+  const openPageLayout = (pageId: string) => {
+    setActivePageId(pageId);
+    setTab('layout');
   };
 
   const duplicatePage = (pageId: string) => {
@@ -286,8 +294,21 @@ export function ControlApp() {
         <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">{error}</div>
       ) : null}
 
-      {/* Pages tab */}
-      {tab === 'pages' && activePage ? (
+      {/* Pages tab — order, rotation and per-page timing */}
+      {tab === 'pages' ? (
+        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
+          <PagesOverviewPanel
+            onOpenPage={openPageLayout}
+            onAddPage={addPage}
+            onDuplicatePage={duplicatePage}
+            onDeletePage={deletePage}
+            onMakeDefault={makeDefault}
+          />
+        </main>
+      ) : null}
+
+      {/* Layout tab — the page editor */}
+      {tab === 'layout' && activePage ? (
         <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_20rem]">
           <PagesPanel
             className="hidden md:flex"

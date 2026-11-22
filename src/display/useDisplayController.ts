@@ -36,29 +36,31 @@ export function useDisplayController(screenId: string | undefined, config: Board
   const rotationPages = useMemo(() => {
     if (!settings) return pages;
     if (!settings.rotation.enabled) return pages;
-    return settings.rotation.pageIds
-      .map((id) => pages.find((page) => page.id === id))
-      .filter((page): page is Page => Boolean(page));
+    // Rotation membership is a set; pages cycle in board order.
+    const included = new Set(settings.rotation.pageIds);
+    return pages.filter((page) => included.has(page.id));
   }, [pages, settings]);
 
   const assigned = screen?.assignedPageId
     ? pages.find((page) => page.id === screen.assignedPageId)
     : null;
-  const rotated = rotationPages.length
+  const defaultPage = pages.find((page) => page.id === settings?.defaultPageId) ?? pages[0];
+  const rotating = Boolean(settings?.rotation.enabled) && rotationPages.length > 0;
+  const rotated = rotating
     ? rotationPages[rotationIndex % rotationPages.length]
-    : pages[0];
-  const base = assigned ?? rotated ?? pages[0] ?? null;
+    : defaultPage;
+  const base = assigned ?? rotated ?? defaultPage ?? null;
   const page = (override && pages.find((item) => item.id === override)) || base;
 
-  // Rotation
+  // Rotation — each page stays up for its own duration (or the default interval).
   useEffect(() => {
     if (!settings?.rotation.enabled || assigned || override) return;
-    const timer = window.setInterval(
-      () => setRotationIndex((index) => index + 1),
-      Math.max(5, settings.rotation.intervalSec) * 1000,
-    );
-    return () => window.clearInterval(timer);
-  }, [settings?.rotation.enabled, settings?.rotation.intervalSec, assigned, override]);
+    if (rotationPages.length < 2) return;
+    const current = rotationPages[rotationIndex % rotationPages.length];
+    const seconds = Math.max(5, current?.rotationSec ?? settings.rotation.intervalSec);
+    const timer = window.setTimeout(() => setRotationIndex((index) => index + 1), seconds * 1000);
+    return () => window.clearTimeout(timer);
+  }, [settings?.rotation.enabled, settings?.rotation.intervalSec, rotationPages, rotationIndex, assigned, override]);
 
   // Presence + heartbeat
   useEffect(() => {

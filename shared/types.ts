@@ -81,6 +81,8 @@ export interface Page {
   theme?: Partial<Theme>;
   background?: Background;
   transition: Transition;
+  /** Seconds this page stays on screen during rotation. Falls back to settings.rotation.intervalSec. */
+  rotationSec?: number;
   cards: Card[];
 }
 

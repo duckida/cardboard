@@ -108,12 +108,14 @@ function normalizePage(input: unknown, index: number, base: Page): Page {
   const cards = Array.isArray(p.cards)
     ? p.cards.map((c, i) => normalizeCard(c, i)).filter((c): c is Card => Boolean(c))
     : [];
+  const rotationSec = num(p.rotationSec, NaN);
   return {
     id: typeof p.id === 'string' && p.id ? p.id : newId(`page${index}`),
     name: typeof p.name === 'string' && p.name ? p.name : `Page ${index + 1}`,
     theme: isObject(p.theme) ? p.theme : undefined,
     background: p.background ? normalizeBackground(p.background, base.background ?? DEFAULT_THEME.background) : undefined,
     transition: p.transition === 'slide' || p.transition === 'none' ? p.transition : 'fade',
+    rotationSec: Number.isFinite(rotationSec) ? Math.min(3600, Math.max(5, Math.round(rotationSec))) : undefined,
     cards,
   };
 }

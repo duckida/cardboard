@@ -1,47 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
-  AlertTriangle,
-  CheckCircle2,
   Download,
-  GripVertical,
   LogOut,
-  Plus,
   RefreshCw,
   RotateCcw,
-  Save,
   Trash2,
   Upload,
-  X,
 } from 'lucide-react';
 import type { Settings } from '@shared/types';
 import { exportBoardJson } from '@shared/normalize';
 import { useBoard } from '@/lib/board';
 import { useAuth } from '@/lib/auth';
 import { BOARD_ID, DEMO } from '@/lib/store';
-import { getDemoFeed, resetLocalDemo, setDemoFeed } from '@/lib/store/local';
-import { Badge, Button, Field, Input, Section, Select, Toggle } from '@/components/ui';
-import { Slider } from './FieldControl';
-import { cn } from '@/lib/cn';
-
-interface FeedStatus {
-  configured: boolean;
-  includeInternal: boolean;
-  updatedAt: number | null;
-  revision: number;
-  lastFetchAt: number | null;
-  lastError: string | null;
-  eventCount: number | null;
-}
-
-const EMPTY_STATUS: FeedStatus = {
-  configured: false,
-  includeInternal: false,
-  updatedAt: null,
-  revision: 1,
-  lastFetchAt: null,
-  lastError: null,
-  eventCount: null,
-};
+import { resetLocalDemo } from '@/lib/store/local';
+import { Button, Field, Input, Section, Select, Toggle } from '@/components/ui';
 
 const TIMEZONES = [
   'Europe/London',
@@ -71,10 +43,6 @@ export function SettingsPanel() {
   const [notice, setNotice] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
-  // Drag state for rotation reorder
-  const dragIndex = useRef<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
-
   const authedFeed = async (init: RequestInit = {}) => {
     const token = await getToken();
     if (!token) throw new Error('Sign in again to change settings.');
@@ -88,7 +56,7 @@ export function SettingsPanel() {
     });
     const json = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (!response.ok) throw new Error(String(json.error || `Request failed (${response.status}).`));
-    return json as unknown as FeedStatus & { ok?: boolean; eventCount?: number };
+    return json as { ok?: boolean; eventCount?: number };
   };
 
   if (!config) return null;
@@ -97,28 +65,6 @@ export function SettingsPanel() {
 
   const patchSettings = (fn: (s: Settings) => void) => {
     mutate((draft) => fn(draft.settings));
-  };
-
-  // ── Rotation page list helpers ──────────────────────────────────────────
-  // pageIds is the ordered list of pages in the rotation.
-  const rotationIds = settings.rotation.pageIds;
-
-  const toggleRotationPage = (pageId: string) => {
-    patchSettings((s) => {
-      s.rotation.pageIds = s.rotation.pageIds.includes(pageId)
-        ? s.rotation.pageIds.filter((id) => id !== pageId)
-        : [...s.rotation.pageIds, pageId];
-    });
-  };
-
-  const reorderRotation = (from: number, to: number) => {
-    if (from === to) return;
-    patchSettings((s) => {
-      const next = [...s.rotation.pageIds];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      s.rotation.pageIds = next;
-    });
   };
 
   // ── Feed (stored publicly in the board config) ──────────────────────────
@@ -212,112 +158,6 @@ export function SettingsPanel() {
             </datalist>
           </>
         </Field>
-      </Section>
-
-      {/* ── Rotation ────────────────────────────────────────────────────── */}
-      <Section
-        title="Rotation"
-        description="Screens that aren't assigned to a specific page can cycle through a list automatically."
-      >
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-stone-50 p-3">
-          <div>
-            <div className="text-sm font-semibold text-stone-800">Rotate pages automatically</div>
-            <div className="text-xs text-stone-500">Turn this on to cycle through the pages below.</div>
-          </div>
-          <Toggle
-            checked={settings.rotation.enabled}
-            onChange={(v) => patchSettings((s) => { s.rotation.enabled = v; })}
-            label="Enable rotation"
-          />
-        </div>
-
-        {settings.rotation.enabled ? (
-          <>
-            <Slider
-              label="Default time per page"
-              value={settings.rotation.intervalSec}
-              min={5}
-              max={300}
-              step={5}
-              onChange={(v) => patchSettings((s) => { s.rotation.intervalSec = v; })}
-              suffix=" seconds"
-            />
-
-            <div>
-              <div className="mb-2 text-sm font-medium text-stone-700">Pages in rotation order</div>
-              <p className="mb-3 text-xs text-stone-500">
-                Tick pages to include them, then drag to reorder. Pages rotate in the order shown.
-              </p>
-
-              {/* Pages not yet in rotation — add them */}
-              {pages.filter((p) => !rotationIds.includes(p.id)).length > 0 ? (
-                <div className="mb-3 space-y-1">
-                  <div className="text-xs font-semibold text-stone-400">Not in rotation</div>
-                  {pages
-                    .filter((p) => !rotationIds.includes(p.id))
-                    .map((page) => (
-                      <div
-                        key={page.id}
-                        className="flex items-center justify-between rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-2"
-                      >
-                        <span className="text-sm text-stone-500">{page.name}</span>
-                        <Button size="sm" variant="secondary" onClick={() => toggleRotationPage(page.id)}>
-                          <Plus size={13} /> Add
-                        </Button>
-                      </div>
-                    ))}
-                </div>
-              ) : null}
-
-              {/* Pages in rotation — drag to reorder */}
-              {rotationIds.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50 py-6 text-center text-sm text-stone-400">
-                  No pages in rotation yet. Add some above.
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {rotationIds.map((pageId, index) => {
-                    const page = pages.find((p) => p.id === pageId);
-                    if (!page) return null;
-                    return (
-                      <div
-                        key={pageId}
-                        draggable
-                        onDragStart={() => { dragIndex.current = index; }}
-                        onDragOver={(e) => { e.preventDefault(); setDragOver(index); }}
-                        onDragLeave={() => setDragOver(null)}
-                        onDrop={() => {
-                          if (dragIndex.current !== null) reorderRotation(dragIndex.current, index);
-                          dragIndex.current = null;
-                          setDragOver(null);
-                        }}
-                        onDragEnd={() => { dragIndex.current = null; setDragOver(null); }}
-                        className={cn(
-                          'flex items-center gap-2 rounded-xl border bg-white p-2.5 shadow-sm transition',
-                          dragOver === index ? 'border-amber-400 shadow-md' : 'border-stone-200',
-                        )}
-                      >
-                        <GripVertical size={15} className="shrink-0 cursor-grab text-stone-300" />
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-amber-100 text-xs font-semibold text-amber-700">
-                          {index + 1}
-                        </span>
-                        <span className="flex-1 text-sm font-medium text-stone-800">{page.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => toggleRotationPage(pageId)}
-                          className="rounded-lg p-1 text-stone-400 transition hover:bg-red-50 hover:text-red-500"
-                          title="Remove from rotation"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </>
-        ) : null}
       </Section>
 
       {/* ── Performance ─────────────────────────────────────────────────── */}
