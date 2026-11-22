@@ -92,6 +92,7 @@ export interface Settings {
   rotation: { enabled: boolean; pageIds: string[]; intervalSec: number };
   maintenance: { reloadAt: string | null; blankOutsideHours: boolean };
   lowPower: boolean;
+  calendar: { url: string; includeInternal: boolean };
 }
 
 export interface BoardConfig {

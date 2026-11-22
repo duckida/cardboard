@@ -186,6 +186,7 @@ export function defaultBoard(): BoardConfig {
     rotation: { enabled: false, pageIds: [home.id, week.id], intervalSec: 30 },
     maintenance: { reloadAt: '03:30', blankOutsideHours: false },
     lowPower: false,
+    calendar: { url: '', includeInternal: false },
   };
 
   return {

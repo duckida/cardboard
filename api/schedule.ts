@@ -19,13 +19,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const db = getDb();
     const board = db.collection('boards').doc(boardId);
-    const [feedSnap, cacheSnap, metaSnap] = await Promise.all([
-      board.collection('private').doc('feeds').get(),
+    const [configSnap, cacheSnap, metaSnap] = await Promise.all([
+      board.get(),
       board.collection('scheduleCache').doc('current').get(),
       board.collection('scheduleMeta').doc('current').get(),
     ]);
 
-    const feed = feedSnap.data() as FeedConfig | undefined;
+    const config = configSnap.data() as { settings?: { calendar?: { url?: string; includeInternal?: boolean } } } | undefined;
+    const calendar = config?.settings?.calendar;
+    const feed: FeedConfig | undefined = calendar?.url
+      ? { url: calendar.url, includeInternal: Boolean(calendar.includeInternal), updatedAt: Date.now() }
+      : undefined;
     if (!feed?.url) {
       return res.status(200).json({ events: [], configured: false });
     }

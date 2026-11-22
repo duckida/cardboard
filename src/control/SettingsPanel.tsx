@@ -65,13 +65,6 @@ export function SettingsPanel() {
   const { email, signOut, getToken } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [status, setStatus] = useState<FeedStatus>(() => {
-    if (!DEMO) return EMPTY_STATUS;
-    const feed = getDemoFeed();
-    return { ...EMPTY_STATUS, configured: Boolean(feed), includeInternal: Boolean(feed?.includeInternal) };
-  });
-  const [feedUrl, setFeedUrl] = useState('');
-  const [includeInternal, setIncludeInternal] = useState(status.includeInternal);
   const [feedBusy, setFeedBusy] = useState(false);
   const [feedError, setFeedError] = useState<string | null>(null);
   const [feedNotice, setFeedNotice] = useState<string | null>(null);
@@ -97,23 +90,6 @@ export function SettingsPanel() {
     if (!response.ok) throw new Error(String(json.error || `Request failed (${response.status}).`));
     return json as unknown as FeedStatus & { ok?: boolean; eventCount?: number };
   };
-
-  useEffect(() => {
-    if (DEMO) return;
-    let alive = true;
-    void (async () => {
-      try {
-        const next = await authedFeed();
-        if (!alive) return;
-        setStatus(next);
-        setIncludeInternal(Boolean(next.includeInternal));
-      } catch (error) {
-        if (alive) setFeedError(error instanceof Error ? error.message : 'Could not read calendar settings.');
-      }
-    })();
-    return () => { alive = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [DEMO, getToken]);
 
   if (!config) return null;
   const settings = config.settings;
@@ -145,38 +121,16 @@ export function SettingsPanel() {
     });
   };
 
-  // ── Feed ────────────────────────────────────────────────────────────────
-  const saveFeed = async () => {
-    setFeedError(null);
-    setFeedNotice(null);
-    if (!feedUrl.trim()) { setFeedError('Paste the calendar URL first.'); return; }
-    setFeedBusy(true);
-    try {
-      if (DEMO) {
-        setDemoFeed({ url: feedUrl.trim(), includeInternal });
-        setStatus({ ...EMPTY_STATUS, configured: true, includeInternal, updatedAt: Date.now() });
-        setFeedNotice('Saved. Demo mode still shows sample events.');
-      } else {
-        const next = await authedFeed({ method: 'POST', body: JSON.stringify({ url: feedUrl.trim(), includeInternal }) });
-        setStatus(next);
-        setFeedNotice('Saved. The URL is stored server-side only.');
-      }
-      setFeedUrl('');
-    } catch (error) {
-      setFeedError(error instanceof Error ? error.message : 'Could not save that feed.');
-    } finally {
-      setFeedBusy(false);
-    }
-  };
-
+  // ── Feed (stored publicly in the board config) ──────────────────────────
   const probeFeed = async () => {
     setFeedError(null);
     setFeedNotice(null);
-    if (!feedUrl.trim()) { setFeedError('Paste the calendar URL first.'); return; }
+    const url = settings.calendar.url.trim();
+    if (!url) { setFeedError('Paste the calendar URL first.'); return; }
     setFeedBusy(true);
     try {
       if (DEMO) { setFeedNotice('Demo mode uses sample events, not a real calendar.'); return; }
-      const result = await authedFeed({ method: 'POST', body: JSON.stringify({ probe: true, url: feedUrl.trim(), includeInternal }) });
+      const result = await authedFeed({ method: 'POST', body: JSON.stringify({ probe: true, url, includeInternal: settings.calendar.includeInternal }) });
       setFeedNotice(`Feed works — found ${result.eventCount ?? 0} events in the next 60 days.`);
     } catch (error) {
       setFeedError(error instanceof Error ? error.message : 'That feed could not be read.');
@@ -185,27 +139,10 @@ export function SettingsPanel() {
     }
   };
 
-  const removeFeed = async () => {
+  const removeFeed = () => {
     if (!window.confirm('Remove the calendar feed? Schedule widgets will stop updating.')) return;
-    setFeedBusy(true);
-    setFeedError(null);
-    setFeedNotice(null);
-    try {
-      if (DEMO) {
-        setDemoFeed(null);
-        setStatus(EMPTY_STATUS);
-        setIncludeInternal(false);
-      } else {
-        const next = await authedFeed({ method: 'DELETE' });
-        setStatus(next);
-      }
-      setFeedUrl('');
-      setFeedNotice('Calendar feed removed.');
-    } catch (error) {
-      setFeedError(error instanceof Error ? error.message : 'Could not remove that feed.');
-    } finally {
-      setFeedBusy(false);
-    }
+    patchSettings((s) => { s.calendar.url = ''; });
+    setFeedNotice('Calendar feed removed.');
   };
 
   const exportJson = () => {
@@ -408,35 +345,19 @@ export function SettingsPanel() {
       {/* ── Calendar feed ───────────────────────────────────────────────── */}
       <Section
         title="Calendar feed"
-        description="Your SOCS iCalendar URL. It is stored server-side — screens never see it."
-        actions={
-          status.configured ? (
-            <Badge tone="green"><CheckCircle2 size={11} /> Connected</Badge>
-          ) : (
-            <Badge tone="amber"><AlertTriangle size={11} /> Not set up</Badge>
-          )
-        }
+        description="Your SOCS iCalendar URL. Stored in the public board config so screens can read it."
       >
-        {status.configured ? (
-          <div className="rounded-xl bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
-            ✓ A calendar feed is saved.
-            {status.eventCount != null ? ` ${status.eventCount} events cached.` : ''}
-            {status.lastFetchAt ? ` Last checked ${new Date(status.lastFetchAt).toLocaleString()}.` : ''}
-            {status.lastError ? <span className="block mt-1 text-red-600">Last error: {status.lastError}</span> : null}
-          </div>
-        ) : (
-          <div className="rounded-xl bg-stone-50 px-3 py-3 text-sm text-stone-600">
-            Find the iCalendar link in your SOCS week view — it usually starts with <code className="rounded bg-stone-200 px-1">webcal://</code> and ends in <code className="rounded bg-stone-200 px-1">CalendarSync.ashx</code>. Replace <code className="rounded bg-stone-200 px-1">webcal://</code> with <code className="rounded bg-stone-200 px-1">https://</code> before pasting.
-          </div>
-        )}
+        <div className="rounded-xl bg-stone-50 px-3 py-3 text-sm text-stone-600">
+          Find the iCalendar link in your SOCS week view — it usually starts with <code className="rounded bg-stone-200 px-1">webcal://</code> and ends in <code className="rounded bg-stone-200 px-1">CalendarSync.ashx</code>. You can paste it as-is; it is converted to https automatically.
+        </div>
 
-        <Field label={status.configured ? 'Replace the feed URL' : 'Feed URL'}>
+        <Field label="Feed URL" help="Leave blank to disable the schedule widget.">
           <Input
-            type="password"
+            type="url"
             autoComplete="off"
-            value={feedUrl}
-            placeholder={status.configured ? 'Paste a new URL to replace it' : 'https://…/CalendarSync.ashx?…'}
-            onChange={(e) => setFeedUrl(e.target.value)}
+            value={settings.calendar.url}
+            placeholder="https://…/CalendarSync.ashx?…"
+            onChange={(e) => patchSettings((s) => { s.calendar.url = e.target.value; })}
           />
         </Field>
 
@@ -445,21 +366,22 @@ export function SettingsPanel() {
             <div className="text-sm font-semibold text-stone-800">Include internal / approved events</div>
             <div className="text-xs text-stone-500">Adds <code className="rounded bg-stone-100 px-1">A=1</code> to the request. Leave off for the public calendar.</div>
           </div>
-          <Toggle checked={includeInternal} onChange={setIncludeInternal} label="Include internal events" />
+          <Toggle
+            checked={settings.calendar.includeInternal}
+            onChange={(v) => patchSettings((s) => { s.calendar.includeInternal = v; })}
+            label="Include internal events"
+          />
         </div>
 
         {feedError ? <p className="text-sm text-red-600">{feedError}</p> : null}
         {feedNotice ? <p className="text-sm text-emerald-700">{feedNotice}</p> : null}
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="primary" onClick={() => void saveFeed()} disabled={feedBusy || !feedUrl.trim()}>
-            <Save size={14} /> Save feed
-          </Button>
-          <Button onClick={() => void probeFeed()} disabled={feedBusy || !feedUrl.trim()}>
+          <Button onClick={() => void probeFeed()} disabled={feedBusy || !settings.calendar.url.trim()}>
             <RefreshCw size={14} /> Test connection
           </Button>
-          {status.configured ? (
-            <Button variant="danger" onClick={() => void removeFeed()} disabled={feedBusy}>
+          {settings.calendar.url.trim() ? (
+            <Button variant="danger" onClick={removeFeed} disabled={feedBusy}>
               <Trash2 size={14} /> Remove
             </Button>
           ) : null}
@@ -467,7 +389,7 @@ export function SettingsPanel() {
       </Section>
 
       {/* ── Import / export ─────────────────────────────────────────────── */}
-      <Section title="Backup and restore" description="Export saves everything — pages, widgets, theme, settings. Calendar URLs stay server-side.">
+      <Section title="Backup and restore" description="Export saves everything — pages, widgets, theme, settings, including the calendar URL.">
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={exportJson}>
             <Download size={14} /> Export backup

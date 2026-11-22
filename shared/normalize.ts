@@ -171,6 +171,10 @@ export function normalizeBoardConfig(raw: unknown): BoardConfig {
       blankOutsideHours: Boolean(maintenance.blankOutsideHours),
     },
     lowPower: Boolean(s.lowPower),
+    calendar: {
+      url: typeof s.calendar?.url === 'string' ? s.calendar.url : (typeof s.calendarUrl === 'string' ? s.calendarUrl : ''),
+      includeInternal: Boolean(s.calendar?.includeInternal ?? s.calendarIncludeInternal),
+    },
   };
 
   if (!pages.some((p) => p.id === settings.defaultPageId)) settings.defaultPageId = pages[0].id;
