@@ -300,9 +300,6 @@ export function ControlApp() {
           <PagesOverviewPanel
             onOpenPage={openPageLayout}
             onAddPage={addPage}
-            onDuplicatePage={duplicatePage}
-            onDeletePage={deletePage}
-            onMakeDefault={makeDefault}
           />
         </main>
       ) : null}
