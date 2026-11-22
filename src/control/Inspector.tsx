@@ -18,7 +18,7 @@ export function Inspector({
   onSelect: (id: string | null) => void;
 }) {
   const { config, mutate } = useBoard();
-  const card = page.cards.find((c) => c.id === selectedId) ?? null;
+  const card = page?.cards?.find((c) => c.id === selectedId) ?? null;
   const def = card ? CARD_DEFS[card.type] : null;
   const theme = config!.theme;
 

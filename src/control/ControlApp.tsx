@@ -51,7 +51,7 @@ export function ControlApp() {
     if (!config) return;
     const exists = activePageId && config.pages.some((p) => p.id === activePageId);
     if (exists) return;
-    const fallback = config.pages.find((p) => p.id === config.settings.defaultPageId) ?? config.pages[0];
+    const fallback = (config.pages ?? []).find((p) => p.id === config.settings.defaultPageId) ?? (config.pages ?? [])[0];
     setActivePageId(fallback?.id ?? null);
   }, [config, activePageId]);
 
@@ -103,7 +103,7 @@ export function ControlApp() {
     );
   }
 
-  const activePage = config.pages.find((p) => p.id === activePageId) ?? config.pages[0] ?? null;
+  const activePage = (config.pages ?? []).find((p) => p.id === activePageId) ?? (config.pages ?? [])[0] ?? null;
 
   const addPage = () => {
     const id = newId('page');
@@ -179,8 +179,8 @@ export function ControlApp() {
   const updateLayout = (cardId: string, layout: Rect) => {
     mutate(
       (draft) => {
-        const page = draft.pages.find((p) => p.id === activePage?.id);
-        const card = page?.cards.find((c) => c.id === cardId);
+        const page = (draft.pages ?? []).find((p) => p.id === activePage?.id);
+        const card = page?.cards?.find((c) => c.id === cardId);
         if (card) card.layout = layout;
       },
       { history: false },
