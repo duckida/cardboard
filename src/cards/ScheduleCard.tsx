@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Card, ScheduleConfig, ScheduleEvent } from '@shared/types';
 import { dayKey, dayLabel, formatEventTime, relativeDay } from '@/lib/time';
 
-import { BOARD_ID, DEMO } from '@/lib/store';
+import { DEMO } from '@/lib/store';
 import { demoSchedule } from '@/lib/demoSchedule';
 import { useBoard } from '@/lib/board';
 

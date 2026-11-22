@@ -199,11 +199,3 @@ export function resetLocalDemo() {
   localStorage.removeItem('cb.demoAuth');
 }
 
-export function getDemoFeed(): { url: string; includeInternal: boolean } | null {
-  return read<{ url: string; includeInternal: boolean } | null>('demoFeed', null);
-}
-
-export function setDemoFeed(feed: { url: string; includeInternal: boolean } | null) {
-  if (feed) write('demoFeed', feed);
-  else localStorage.removeItem(PREFIX + 'demoFeed');
-}

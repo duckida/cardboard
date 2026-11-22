@@ -47,7 +47,7 @@ For a real deployment:
 
    Add `--create` with `ADMIN_PASSWORD` set if the user does not exist yet. The script never prints the password.
 
-The public board document is intentionally readable by unauthenticated screens. Only users with the `role: "admin"` claim can write. The calendar URL is stored in a server-only Firestore subcollection and is never included in the public board config.
+The public board document is intentionally readable by unauthenticated screens. Only users with the `role: "admin"` claim can write. The calendar URL lives in the public board config so screens can pass it to `/api/schedule`, which fetches and normalizes the feed for them.
 
 ## Vercel deployment
 
@@ -71,13 +71,13 @@ Set the same variables in Vercel for **Preview** and **Production** as appropria
 
 ## Calendar and media
 
-In **Control → Settings → Calendar**, paste the SOCS iCalendar URL (a `webcal://` URL is accepted and normalized to HTTPS). Choose whether approved/internal events should be included, test the feed, then save it. Screens receive normalized events through `/api/schedule`; they never receive the source URL.
+In **Control → Settings → Calendar**, paste the SOCS iCalendar URL (a `webcal://` URL is accepted and normalized to HTTPS). Choose whether approved/internal events should be included, then test the feed. Screens receive normalized events through `/api/schedule`.
 
 Photos are resized to WebP in the browser and uploaded through `/api/upload` to Hack Club CDN. Image and photo cards support individual captions.
 
 ## JSON backup
 
-**Settings → Export JSON** downloads the complete board configuration. Importing replaces the board after schema validation and layout normalization. Calendar URLs are not part of exports because they remain server-side.
+**Settings → Export JSON** downloads the complete board configuration, including the calendar URL. Importing replaces the board after schema validation and layout normalization.
 
 ## Raspberry Pi
 

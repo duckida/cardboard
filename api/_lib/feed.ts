@@ -26,17 +26,39 @@ export function withScope(rawUrl: string, includeInternal: boolean): string {
   return url.toString();
 }
 
-function categoriesOf(event: { component?: { getFirstPropertyValue?: (name: string) => unknown } }): string[] {
+interface PropertyLike {
+  getValues?: () => unknown[];
+  getFirstValue?: () => unknown;
+}
+
+interface ComponentLike {
+  getFirstPropertyValue?: (name: string) => unknown;
+  getAllProperties?: (name: string) => PropertyLike[];
+}
+
+/**
+ * SOCS emits multi-value CATEGORIES lines like `CATEGORIES:Sport, Rugby Union, Fixture`.
+ * getFirstPropertyValue only returns the first value, so collect every value from
+ * every CATEGORIES property instead — category filters depend on the full list.
+ */
+function categoriesOf(event: { component?: ComponentLike }): string[] {
   try {
-    const value = event.component?.getFirstPropertyValue?.('categories');
-    if (!value) return [];
-    const list = Array.isArray(value) ? value : [value];
+    const component = event.component;
+    if (!component) return [];
+    const values: unknown[] = [];
+    if (typeof component.getAllProperties === 'function') {
+      for (const property of component.getAllProperties('categories')) {
+        values.push(...(property.getValues?.() ?? [property.getFirstValue?.()]));
+      }
+    } else {
+      values.push(component.getFirstPropertyValue?.('categories'));
+    }
     const out: string[] = [];
-    for (const item of list) {
-      if (typeof item === 'string') {
-        out.push(...item.split(',').map((part) => part.trim()));
-      } else if (item && typeof item === 'object' && 'join' in item) {
-        out.push(String(item));
+    for (const value of values) {
+      const list = Array.isArray(value) ? value : [value];
+      for (const item of list) {
+        if (typeof item === 'string') out.push(...item.split(',').map((part) => part.trim()));
+        else if (item != null) out.push(String(item));
       }
     }
     return [...new Set(out.filter(Boolean))];
@@ -57,7 +79,7 @@ interface EventLike {
   description?: string;
   startDate: TimeLike;
   endDate: TimeLike;
-  component?: { getFirstPropertyValue?: (name: string) => unknown };
+  component?: ComponentLike;
 }
 
 function toEvent(event: EventLike, startDate: TimeLike, endDate: TimeLike): ScheduleEvent {
@@ -85,17 +107,26 @@ export function parseIcs(ics: string, from: Date, to: Date): ScheduleEvent[] {
   const out: ScheduleEvent[] = [];
 
   for (const event of events) {
-    out.push(toEvent(event as unknown as EventLike, event.startDate as unknown as TimeLike, event.endDate as unknown as TimeLike));
+    // One malformed VEVENT must not take down the whole feed.
+    try {
+      out.push(toEvent(event as unknown as EventLike, event.startDate as unknown as TimeLike, event.endDate as unknown as TimeLike));
+    } catch {
+      // skip the broken event
+    }
   }
   for (const occurrence of occurrences) {
-    const item = (occurrence as unknown as { item: EventLike }).item;
-    out.push(
-      toEvent(
-        item,
-        (occurrence as unknown as { startDate: TimeLike }).startDate,
-        (occurrence as unknown as { endDate: TimeLike }).endDate,
-      ),
-    );
+    try {
+      const item = (occurrence as unknown as { item: EventLike }).item;
+      out.push(
+        toEvent(
+          item,
+          (occurrence as unknown as { startDate: TimeLike }).startDate,
+          (occurrence as unknown as { endDate: TimeLike }).endDate,
+        ),
+      );
+    } catch {
+      // skip the broken occurrence
+    }
   }
 
   const seen = new Set<string>();
