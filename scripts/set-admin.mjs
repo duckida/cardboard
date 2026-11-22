@@ -13,6 +13,7 @@ function accountFromEnv() {
 
 const email = process.argv[2] || process.env.ADMIN_EMAIL;
 const create = process.argv.includes('--create');
+const password = process.env.ADMIN_PASSWORD;
 if (!email) throw new Error('Usage: npm run set-admin -- admin@example.com [--create]');
 
 const app = getApps()[0] || initializeApp({ credential: cert(accountFromEnv()) });
@@ -22,9 +23,14 @@ try {
   user = await auth.getUserByEmail(email);
 } catch (error) {
   if (!create || error?.code !== 'auth/user-not-found') throw error;
-  const password = process.env.ADMIN_PASSWORD;
   if (!password) throw new Error('ADMIN_PASSWORD is required with --create.');
   user = await auth.createUser({ email, password });
+}
+
+if (password && user.passwordHash) {
+  user = await auth.updateUser(user.uid, { password });
+} else if (password && !user.passwordHash && !create) {
+  user = await auth.updateUser(user.uid, { password });
 }
 
 await auth.setCustomUserClaims(user.uid, { ...(user.customClaims || {}), role: 'admin' });
