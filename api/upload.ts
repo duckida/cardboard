@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { HttpError, methodNotAllowed, sendError } from './_lib/http';
-import { requireAdmin } from './_lib/firebaseAdmin';
+import { HttpError, methodNotAllowed, sendError } from './_lib/http.js';
+import { requireAdmin } from './_lib/firebaseAdmin.js';
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif', 'image/avif']);

@@ -2,7 +2,7 @@ import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getAuth, type DecodedIdToken } from 'firebase-admin/auth';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import type { VercelRequest } from '@vercel/node';
-import { HttpError, bearerToken } from './http';
+import { HttpError, bearerToken } from './http.js';
 
 let cachedApp: App | null = null;
 let cachedDb: Firestore | null = null;
