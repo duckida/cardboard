@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Card, ScheduleConfig, ScheduleEvent } from '@shared/types';
 import { dayKey, dayLabel, formatEventTime, relativeDay } from '@/lib/time';
-import { useScheduleMeta } from '@/lib/hooks';
+
 import { BOARD_ID, DEMO } from '@/lib/store';
 import { demoSchedule } from '@/lib/demoSchedule';
 import { useBoard } from '@/lib/board';
@@ -14,8 +14,10 @@ interface Response {
 
 export function ScheduleCard({ card }: { card: Card }) {
   const cfg = card.config as ScheduleConfig;
-  const meta = useScheduleMeta();
-  const timezone = useBoard().config?.settings.timezone ?? '';
+  const boardConfig = useBoard().config;
+  const timezone = boardConfig?.settings.timezone ?? '';
+  const calendarUrl = boardConfig?.settings.calendar.url ?? '';
+  const calendarIncludeInternal = boardConfig?.settings.calendar.includeInternal ?? false;
   const [state, setState] = useState<Response | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -27,9 +29,12 @@ export function ScheduleCard({ card }: { card: Card }) {
         return;
       }
       try {
-        const response = await fetch(
-          `/api/schedule?board=${encodeURIComponent(BOARD_ID)}&days=${cfg.daysAhead}&r=${meta?.revision ?? 1}`,
-        );
+        const params = new URLSearchParams({
+          days: String(cfg.daysAhead),
+          url: calendarUrl,
+          includeInternal: calendarIncludeInternal ? '1' : '0',
+        });
+        const response = await fetch(`/api/schedule?${params.toString()}`);
         if (!response.ok) throw new Error('schedule');
         const json = (await response.json()) as Response;
         if (alive) {
@@ -49,7 +54,7 @@ export function ScheduleCard({ card }: { card: Card }) {
       alive = false;
       window.clearInterval(timer);
     };
-  }, [cfg.daysAhead, meta?.revision]);
+  }, [cfg.daysAhead, calendarUrl, calendarIncludeInternal]);
 
   const events = useMemo(() => {
     const all = state?.events ?? [];
