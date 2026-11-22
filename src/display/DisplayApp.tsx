@@ -25,7 +25,7 @@ export function DisplayApp() {
   const { config, loading } = useBoard();
   const announcements = useAnnouncements();
   const state = useDisplayController(screenId, config);
-  const lite = isLiteMode(config?.settings.lowPower ?? false);
+  const lite = isLiteMode(config?.settings?.lowPower ?? false);
 
   useFontLink(config?.theme.font.url);
 

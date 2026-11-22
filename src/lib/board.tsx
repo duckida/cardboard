@@ -52,9 +52,9 @@ export function BoardProvider({ children }: { children: ReactNode }) {
   const lastHistoryAt = useRef(0);
 
   useEffect(() => {
-    const unsub = store.subscribeConfig((next) => {
+    const unsub = store.subscribeConfig((raw) => {
       setLoading(false);
-      if (!next) {
+      if (!raw) {
         if (!pendingRef.current) {
           configRef.current = null;
           setConfig(null);
@@ -62,6 +62,14 @@ export function BoardProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (pendingRef.current) return;
+      // Older or partially-written board docs can be missing fields (settings,
+      // theme, rotation…). Normalising on read keeps every consumer safe.
+      let next: BoardConfig;
+      try {
+        next = normalizeBoardConfig(raw);
+      } catch {
+        next = defaultBoard();
+      }
       configRef.current = next;
       setConfig(next);
     });
