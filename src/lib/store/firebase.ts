@@ -51,7 +51,7 @@ export class FirebaseStore implements BoardStore {
   }
 
   async saveConfig(config: BoardConfig) {
-    await setDoc(this.boardDoc(), { ...config, updatedAt: Date.now() });
+    await setDoc(this.boardDoc(), clean({ ...config, updatedAt: Date.now() }));
   }
 
   subscribeAnnouncements(cb: (items: Announcement[]) => void): Unsubscribe {

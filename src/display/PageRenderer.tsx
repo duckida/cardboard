@@ -62,6 +62,41 @@ export function PageRenderer({
   );
 }
 
+type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+
+const RESIZE_HANDLES: ResizeHandle[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+
+function applyResize(
+  rect: Rect,
+  handle: ResizeHandle,
+  delta: { dx: number; dy: number },
+  cols: number,
+  rows: number,
+): Rect {
+  let { x, y, w, h } = rect;
+  const { dx, dy } = delta;
+
+  if (handle.includes('e')) {
+    w = Math.min(cols - x, Math.max(1, w + dx));
+  }
+  if (handle.includes('s')) {
+    h = Math.min(rows - y, Math.max(1, h + dy));
+  }
+  if (handle.includes('w')) {
+    const maxX2 = x + w;
+    const newX = Math.max(0, Math.min(maxX2 - 1, x + dx));
+    w = maxX2 - newX;
+    x = newX;
+  }
+  if (handle.includes('n')) {
+    const maxY2 = y + h;
+    const newY = Math.max(0, Math.min(maxY2 - 1, y + dy));
+    h = maxY2 - newY;
+    y = newY;
+  }
+  return { x, y, w, h };
+}
+
 function CardSlot({
   card,
   metrics,
@@ -87,7 +122,14 @@ function CardSlot({
   const drag = useRef<
     | null
     | {
-        mode: 'move' | 'resize';
+        mode: 'move';
+        startX: number;
+        startY: number;
+        rect: Rect;
+      }
+    | {
+        mode: 'resize';
+        handle: ResizeHandle;
         startX: number;
         startY: number;
         rect: Rect;
@@ -100,13 +142,23 @@ function CardSlot({
   const def = CARD_DEFS[card.type];
   const Component = def?.Component;
 
-  const begin = (event: ReactPointerEvent, mode: 'move' | 'resize') => {
+  const beginMove = (event: ReactPointerEvent) => {
     if (!editing || event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
     onSelect?.(card.id);
     onBeginHistory?.();
-    drag.current = { mode, startX: event.clientX, startY: event.clientY, rect: card.layout };
+    drag.current = { mode: 'move', startX: event.clientX, startY: event.clientY, rect: card.layout };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  };
+
+  const beginResize = (event: ReactPointerEvent, handle: ResizeHandle) => {
+    if (!editing || event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSelect?.(card.id);
+    onBeginHistory?.();
+    drag.current = { mode: 'resize', handle, startX: event.clientX, startY: event.clientY, rect: card.layout };
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   };
 
@@ -116,11 +168,10 @@ function CardSlot({
     const delta = deltaToGrid(event.clientX - current.startX, event.clientY - current.startY, metrics);
     const next =
       current.mode === 'move'
-        ? { ...current.rect, x: current.rect.x + delta.dx, y: current.rect.y + delta.dy }
-        : { ...current.rect, w: current.rect.w + delta.dx, h: current.rect.h + delta.dy };
-    const clamped = clampRect(next, metrics.cols, metrics.rows);
-    liveRef.current = clamped;
-    setLive(clamped);
+        ? clampRect({ ...current.rect, x: current.rect.x + delta.dx, y: current.rect.y + delta.dy }, metrics.cols, metrics.rows)
+        : applyResize(current.rect, current.handle, delta, metrics.cols, metrics.rows);
+    liveRef.current = next;
+    setLive(next);
   };
 
   const end = () => {
@@ -142,10 +193,10 @@ function CardSlot({
         top: px.top,
         width: px.width,
         height: px.height,
-        zIndex: pageZ(card),
+        zIndex: selected ? 10 : pageZ(card),
         touchAction: editing ? 'none' : undefined,
       }}
-      onPointerDown={(event) => begin(event, 'move')}
+      onPointerDown={beginMove}
       onPointerMove={move}
       onPointerUp={end}
       onPointerCancel={end}
@@ -160,14 +211,18 @@ function CardSlot({
           <div className="cb-slot-label">
             {def?.name ?? card.type}
           </div>
-          <div
-            className="cb-resize"
-            onPointerDown={(event) => begin(event, 'resize')}
-            onPointerMove={move}
-            onPointerUp={end}
-            onPointerCancel={end}
-            role="presentation"
-          />
+          {selected &&
+            RESIZE_HANDLES.map((handle) => (
+              <div
+                key={handle}
+                className={`cb-resize cb-resize-${handle}`}
+                onPointerDown={(event) => beginResize(event, handle)}
+                onPointerMove={move}
+                onPointerUp={end}
+                onPointerCancel={end}
+                role="presentation"
+              />
+            ))}
         </>
       ) : null}
     </div>

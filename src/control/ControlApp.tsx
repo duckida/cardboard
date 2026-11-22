@@ -288,9 +288,9 @@ export function ControlApp() {
 
       {/* Pages tab */}
       {tab === 'pages' && activePage ? (
-        <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[14rem_minmax(0,1fr)] 2xl:grid-cols-[14rem_minmax(0,1fr)_20rem]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_20rem]">
           <PagesPanel
-            className="hidden xl:flex"
+            className="hidden md:flex"
             pages={config.pages}
             activePageId={activePage.id}
             defaultPageId={config.settings.defaultPageId}
@@ -304,7 +304,7 @@ export function ControlApp() {
 
           <div className="flex min-h-0 flex-col overflow-y-auto">
             {/* Mobile page picker */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 bg-white px-3 py-2 xl:hidden">
+            <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 bg-white px-3 py-2 md:hidden">
               <select
                 className="h-9 flex-1 appearance-none rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-800 outline-none focus:border-amber-400"
                 value={activePage.id}
@@ -333,11 +333,11 @@ export function ControlApp() {
             </div>
           </div>
 
-          <aside className="hidden min-h-0 overflow-y-auto border-l border-stone-200 bg-stone-50 p-4 2xl:block">
+          <aside className="hidden min-h-0 overflow-y-auto border-l border-stone-200 bg-stone-50 p-4 xl:block">
             <Inspector page={activePage} selectedId={selectedCardId} onSelect={setSelectedCardId} />
           </aside>
 
-          <div className="border-t border-stone-200 bg-stone-50 p-4 2xl:hidden">
+          <div className="border-t border-stone-200 bg-stone-50 p-4 xl:hidden">
             <Inspector page={activePage} selectedId={selectedCardId} onSelect={setSelectedCardId} />
           </div>
         </div>

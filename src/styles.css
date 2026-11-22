@@ -144,11 +144,24 @@ body {
   pointer-events: none;
 }
 .cb-resize {
-  position: absolute; right: -5px; bottom: -5px;
-  width: 16px; height: 16px; border-radius: 4px;
-  background: var(--cb-accent); border: 2px solid #080a11;
-  cursor: nwse-resize; z-index: 3;
+  position: absolute;
+  z-index: 15;
+  background: var(--cb-accent);
+  border: 2px solid #080a11;
+  border-radius: 4px;
 }
+
+/* Corner handles */
+.cb-resize-nw { top: -6px; left: -6px; width: 14px; height: 14px; cursor: nwse-resize; }
+.cb-resize-ne { top: -6px; right: -6px; width: 14px; height: 14px; cursor: nesw-resize; }
+.cb-resize-se { bottom: -6px; right: -6px; width: 14px; height: 14px; cursor: nwse-resize; }
+.cb-resize-sw { bottom: -6px; left: -6px; width: 14px; height: 14px; cursor: nesw-resize; }
+
+/* Edge handles */
+.cb-resize-n { top: -5px; left: 50%; transform: translateX(-50%); width: 28px; height: 10px; cursor: ns-resize; }
+.cb-resize-s { bottom: -5px; left: 50%; transform: translateX(-50%); width: 28px; height: 10px; cursor: ns-resize; }
+.cb-resize-w { left: -5px; top: 50%; transform: translateY(-50%); width: 10px; height: 28px; cursor: ew-resize; }
+.cb-resize-e { right: -5px; top: 50%; transform: translateY(-50%); width: 10px; height: 28px; cursor: ew-resize; }
 .cb-canvas { background: var(--cb-bg); box-shadow: 0 20px 60px rgba(0,0,0,0.45); }
 .cb-canvas-grid {
   background-image: radial-gradient(circle, rgba(255,255,255,0.16) 1px, transparent 1px);
