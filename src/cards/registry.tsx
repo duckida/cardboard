@@ -8,6 +8,7 @@ import {
   Quote,
   Timer,
   Type,
+  Video,
   type LucideIcon,
 } from 'lucide-react';
 import type { Card, CardType, Field } from '@shared/types';
@@ -16,6 +17,7 @@ import { WeatherCard } from './WeatherCard';
 import { QuoteCard } from './QuoteCard';
 import { PhotoCard } from './PhotoCard';
 import { ImageCard } from './ImageCard';
+import { VideoCard } from './VideoCard';
 import { IframeCard } from './IframeCard';
 import { MarkdownCard } from './MarkdownCard';
 import { ScheduleCard } from './ScheduleCard';
@@ -171,6 +173,36 @@ export const CARD_DEFS: Record<CardType, CardDef> = {
       },
     ],
     Component: ImageCard,
+  },
+  video: {
+    type: 'video',
+    name: 'Video',
+    description: 'A looping video file. Turn on Fullscreen for edge-to-edge playback.',
+    icon: Video,
+    defaultSize: { w: 14, h: 10 },
+    fields: [
+      {
+        key: 'url',
+        label: 'Video URL',
+        type: 'url',
+        placeholder: 'https://…/clip.mp4',
+        help: 'Direct MP4 or WebM links only. YouTube and Vimeo links belong in the Embed card.',
+      },
+      { key: 'poster', label: 'Poster image URL', type: 'url', placeholder: 'Optional' },
+      {
+        key: 'fit',
+        label: 'Fit',
+        type: 'select',
+        options: [
+          { value: 'cover', label: 'Fill' },
+          { value: 'contain', label: 'Contain' },
+        ],
+      },
+      { key: 'loop', label: 'Loop', type: 'toggle' },
+      { key: 'muted', label: 'Muted', type: 'toggle', help: 'Browsers only autoplay muted videos.' },
+      { key: 'controls', label: 'Show playback controls', type: 'toggle' },
+    ],
+    Component: VideoCard,
   },
   iframe: {
     type: 'iframe',

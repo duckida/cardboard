@@ -97,6 +97,7 @@ function normalizeCard(input: unknown, index: number): Card | null {
       h: num(layout.h, 4),
     }),
     visible: input.visible !== false,
+    fullscreen: input.fullscreen === true,
     refreshSec: Number.isFinite(Number(input.refreshSec)) ? Number(input.refreshSec) : undefined,
     style: isObject(input.style) ? input.style : undefined,
     config: normalizeCardConfig(type, input.config),

@@ -55,6 +55,15 @@ export const iframeSchema = z.object({
   title: z.string().default(''),
 });
 
+export const videoSchema = z.object({
+  url: z.string().default(''),
+  poster: z.string().default(''),
+  fit: z.enum(['cover', 'contain']).default('cover'),
+  loop: z.boolean().default(true),
+  muted: z.boolean().default(true),
+  controls: z.boolean().default(false),
+});
+
 export const scheduleSchema = z.object({
   daysAhead: z.number().min(1).max(60).default(7),
   maxEvents: z.number().min(1).max(40).default(8),
@@ -79,6 +88,7 @@ export const cardSchemas: Record<CardType, z.ZodTypeAny> = {
   quote: quoteSchema,
   photo: photoSchema,
   image: imageSchema,
+  video: videoSchema,
   iframe: iframeSchema,
   schedule: scheduleSchema,
   markdown: markdownSchema,

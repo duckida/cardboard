@@ -73,7 +73,7 @@ Set the same variables in Vercel for **Preview** and **Production** as appropria
 
 In **Control → Settings → Calendar**, paste the SOCS iCalendar URL (a `webcal://` URL is accepted and normalized to HTTPS). Choose whether approved/internal events should be included, then test the feed. Screens receive normalized events through `/api/schedule`.
 
-Photos are resized to WebP in the browser and uploaded through `/api/upload` to Hack Club CDN. Image and photo cards support individual captions.
+Photos are resized to WebP in the browser and uploaded through `/api/upload` to Hack Club CDN. Image and photo cards support individual captions. Add a **Video** card for direct MP4 or WebM files, and turn on **Fullscreen** on an Image, Video or Embed card to make it fill the whole screen edge to edge.
 
 ## JSON backup
 

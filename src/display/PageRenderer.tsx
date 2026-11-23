@@ -141,12 +141,14 @@ function CardSlot({
   const px = rectToPx(rect, metrics);
   const def = CARD_DEFS[card.type];
   const Component = def?.Component;
+  const fullscreen = Boolean(card.fullscreen);
 
   const beginMove = (event: ReactPointerEvent) => {
     if (!editing || event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
     onSelect?.(card.id);
+    if (fullscreen) return;
     onBeginHistory?.();
     drag.current = { mode: 'move', startX: event.clientX, startY: event.clientY, rect: card.layout };
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
@@ -186,14 +188,15 @@ function CardSlot({
 
   return (
     <div
-      className={`cb-slot ${editing ? 'cb-slot-editing' : ''} ${selected ? 'cb-slot-selected' : ''}`}
+      className={`cb-slot ${editing ? 'cb-slot-editing' : ''} ${selected ? 'cb-slot-selected' : ''} ${fullscreen ? 'cb-slot-fullscreen' : ''}`}
       style={{
         position: 'absolute',
-        left: px.left,
-        top: px.top,
-        width: px.width,
-        height: px.height,
-        zIndex: selected ? 10 : pageZ(card),
+        ...(fullscreen
+          ? { inset: 'calc(-1 * var(--cb-page-pad, 0px))' }
+          : { left: px.left, top: px.top, width: px.width, height: px.height }),
+        // In the editor, fullscreen media acts as a backdrop so the other
+        // widgets on the page stay clickable, even while it is selected.
+        zIndex: fullscreen && editing ? 0 : selected ? 10 : pageZ(card),
         touchAction: editing ? 'none' : undefined,
       }}
       onPointerDown={beginMove}
@@ -202,9 +205,15 @@ function CardSlot({
       onPointerCancel={end}
     >
       {Component ? (
-        <CardFrame card={card}>
-          <Component card={card} />
-        </CardFrame>
+        fullscreen ? (
+          <div className="cb-fullscreen-card">
+            <Component card={card} />
+          </div>
+        ) : (
+          <CardFrame card={card}>
+            <Component card={card} />
+          </CardFrame>
+        )
       ) : null}
       {editing ? (
         <>
@@ -212,6 +221,7 @@ function CardSlot({
             {def?.name ?? card.type}
           </div>
           {selected &&
+            !fullscreen &&
             RESIZE_HANDLES.map((handle) => (
               <div
                 key={handle}

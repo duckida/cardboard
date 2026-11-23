@@ -1,5 +1,6 @@
-import { Copy, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Copy, Eye, EyeOff, Maximize2, Trash2 } from 'lucide-react';
 import type { Card, Page, Rect } from '@shared/types';
+import { FULLSCREEN_CARD_TYPES } from '@shared/types';
 import { clampRect } from '@shared/layout';
 import { newId } from '@shared/ids';
 import { CARD_DEFS } from '@/cards/registry';
@@ -70,6 +71,17 @@ export function Inspector({
               <Button size="sm" variant="ghost" onClick={() => updateCard((c) => { c.visible = !c.visible; })} title={card.visible ? 'Hide' : 'Show'}>
                 {card.visible ? <Eye size={14} /> : <EyeOff size={14} />}
               </Button>
+              {FULLSCREEN_CARD_TYPES.includes(card.type) ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => updateCard((c) => { c.fullscreen = !c.fullscreen; })}
+                  title={card.fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                  className={card.fullscreen ? 'text-amber-600' : ''}
+                >
+                  <Maximize2 size={14} />
+                </Button>
+              ) : null}
               <Button size="sm" variant="ghost" onClick={duplicate} title="Duplicate">
                 <Copy size={14} />
               </Button>
@@ -90,26 +102,44 @@ export function Inspector({
             ))}
           </Section>
 
-          <Section title="Position" description="Where this widget sits on the 24×24 grid.">
-            <div className="grid grid-cols-4 gap-2">
-              {(['x', 'y', 'w', 'h'] as const).map((key) => (
-                <label key={key} className="space-y-1">
-                  <span className="block text-xs font-semibold text-stone-500 uppercase">{key === 'w' ? 'Width' : key === 'h' ? 'Height' : key === 'x' ? 'Left' : 'Top'}</span>
-                  <Input
-                    type="number"
-                    min={key === 'w' || key === 'h' ? 1 : 0}
-                    max={23}
-                    value={card.layout[key]}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      const next: Rect = { ...card.layout, [key]: v };
-                      updateCard((c) => { c.layout = clampRect(next, theme.grid.cols, theme.grid.rows); });
-                    }}
-                  />
-                </label>
-              ))}
-            </div>
-          </Section>
+          {FULLSCREEN_CARD_TYPES.includes(card.type) ? (
+            <Section title="Display" description="Fill the whole screen and skip the card frame.">
+              <Field label="Fullscreen" inline help="Edge-to-edge, ignoring the grid position.">
+                <Toggle
+                  checked={Boolean(card.fullscreen)}
+                  onChange={(value) => updateCard((c) => { c.fullscreen = value; })}
+                  label="Fullscreen"
+                />
+              </Field>
+            </Section>
+          ) : null}
+
+          {card.fullscreen ? (
+            <Section title="Position" description="This widget fills the entire screen.">
+              <p className="text-sm text-stone-400">Turn off Fullscreen to move and resize it on the grid again.</p>
+            </Section>
+          ) : (
+            <Section title="Position" description="Where this widget sits on the 24×24 grid.">
+              <div className="grid grid-cols-4 gap-2">
+                {(['x', 'y', 'w', 'h'] as const).map((key) => (
+                  <label key={key} className="space-y-1">
+                    <span className="block text-xs font-semibold text-stone-500 uppercase">{key === 'w' ? 'Width' : key === 'h' ? 'Height' : key === 'x' ? 'Left' : 'Top'}</span>
+                    <Input
+                      type="number"
+                      min={key === 'w' || key === 'h' ? 1 : 0}
+                      max={23}
+                      value={card.layout[key]}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        const next: Rect = { ...card.layout, [key]: v };
+                        updateCard((c) => { c.layout = clampRect(next, theme.grid.cols, theme.grid.rows); });
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </Section>
+          )}
         </>
       ) : (
         <>

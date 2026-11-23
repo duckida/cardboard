@@ -8,10 +8,14 @@ export type CardType =
   | 'quote'
   | 'photo'
   | 'image'
+  | 'video'
   | 'iframe'
   | 'schedule'
   | 'markdown'
   | 'countdown';
+
+/** Card types that look best edge-to-edge. The Fullscreen option is offered for these. */
+export const FULLSCREEN_CARD_TYPES: CardType[] = ['image', 'video', 'iframe'];
 
 export interface Rect {
   x: number;
@@ -36,6 +40,8 @@ export interface Card {
   type: CardType;
   layout: Rect;
   visible: boolean;
+  /** Fill the whole screen, ignoring the card frame and grid placement. */
+  fullscreen?: boolean;
   refreshSec?: number;
   style?: CardStyle;
   // Each card type validates this with its zod schema.
@@ -227,6 +233,15 @@ export interface ImageConfig {
   fit: 'cover' | 'contain';
   showCaption: boolean;
   captionPosition: 'bottom' | 'top';
+}
+
+export interface VideoConfig {
+  url: string;
+  poster: string;
+  fit: 'cover' | 'contain';
+  loop: boolean;
+  muted: boolean;
+  controls: boolean;
 }
 
 export interface IframeConfig {
