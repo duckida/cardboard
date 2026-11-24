@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@theme {
+  --color-paper: #f5f3ee;
+  --color-surface: #ffffff;
+  --color-ink: #20251f;
+  --color-muted: #6f746b;
+  --color-line: #e2ddd2;
+  --color-accent: #0f766e;
+  --color-accent-soft: #e6f2ef;
+  --color-danger: #b23c2b;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+}
+
 /* ── Base ─────────────────────────────────────────────────────────────────── */
 
 :root {
@@ -42,8 +54,8 @@ body {
 
 .cb-control {
   color-scheme: light;
-  background: #f5f4f1;
-  color: #1c1917;
+  color: #20251f;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .cb-control * {
@@ -59,30 +71,143 @@ body {
   -webkit-appearance: none;
   height: 6px;
   border-radius: 999px;
-  background: #e5e3df;
+  background: #e5e1d8;
   cursor: pointer;
   outline: none;
   width: 100%;
 }
 .cb-control input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: #d97706;
+  background: #0f766e;
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(0,0,0,0.18);
   cursor: pointer;
 }
 .cb-control input[type="range"]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: #d97706;
+  background: #0f766e;
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(0,0,0,0.18);
   cursor: pointer;
 }
+
+/* ── Control editor ───────────────────────────────────────────────────────── */
+
+.cb-edit-slot {
+  position: absolute;
+  border-radius: 6px;
+  cursor: grab;
+  container-type: size;
+}
+.cb-edit-slot:active { cursor: grabbing; }
+.cb-edit-slot-fullscreen { cursor: pointer; }
+.cb-edit-slot-selected {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(15, 118, 110, 0.55);
+}
+.cb-edit-slot-hidden { opacity: 0.4; }
+
+.cb-edit-tag {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 12px);
+  padding: 3px 8px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: rgba(12, 17, 15, 0.78);
+  color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+.cb-edit-tag-sub {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: none;
+}
+.cb-edit-tag-hidden {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 9px;
+}
+
+.cb-edit-handle-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+.cb-edit-handle {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #0f766e;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+  pointer-events: auto;
+  touch-action: none;
+}
+.cb-edit-handle-nw { top: -9px; left: -9px; cursor: nwse-resize; }
+.cb-edit-handle-ne { top: -9px; right: -9px; cursor: nesw-resize; }
+.cb-edit-handle-se { bottom: -9px; right: -9px; cursor: nwse-resize; }
+.cb-edit-handle-sw { bottom: -9px; left: -9px; cursor: nesw-resize; }
+
+.cb-edit-fill {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(15, 118, 110, 0.96);
+  color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: background 150ms ease, transform 150ms ease;
+}
+.cb-edit-fill:hover {
+  background: #0b655c;
+  transform: translateX(-50%) translateY(-1px);
+}
+.cb-edit-fill-exit {
+  left: auto;
+  right: 14px;
+  bottom: 14px;
+  transform: none;
+  background: rgba(255, 255, 255, 0.95);
+  color: #20251f;
+}
+.cb-edit-fill-exit:hover { background: #fff; transform: translateY(-1px); }
 
 /* ── Display shell ────────────────────────────────────────────────────────── */
 
@@ -271,7 +396,7 @@ body {
 .cb-schedule { height: 100%; display: flex; flex-direction: column; gap: .55em; overflow: hidden; }
 .cb-schedule-head { display: flex; align-items: center; justify-content: space-between; gap: .5em; flex-shrink: 0; }
 .cb-schedule-list { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: .7em; }
-.cb-schedule-group { min-height: 0; }
+.cb-schedule-group { min-height: 0; flex-shrink: 0; overflow: hidden; }
 .cb-schedule-day { display: flex; align-items: center; gap: .55em; margin-bottom: .22em; color: var(--cb-accent); font-size: clamp(.48rem, 2.3cqw, 1.05rem); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
 .cb-schedule-event { position: relative; display: flex; align-items: flex-start; gap: .45em; padding: .38em 0; border-top: 1px solid color-mix(in srgb, var(--cb-border) 45%, transparent); }
 .cb-schedule-event:first-of-type { border-top: 0; }

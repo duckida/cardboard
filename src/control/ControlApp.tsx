@@ -1,389 +1,326 @@
 import { useEffect, useState } from 'react';
 import {
   ExternalLink,
-  Layers,
   LayoutGrid,
+  Layers,
   LogOut,
   Megaphone,
   MonitorSmartphone,
-  Palette,
   Plus,
   Redo2,
   Settings as SettingsIcon,
   Undo2,
 } from 'lucide-react';
-import type { CardType, Rect } from '@shared/types';
-import { newId } from '@shared/ids';
-import { defaultCardConfig } from '@shared/schemas';
-import { findFreeSpot } from '@shared/layout';
-import { CARD_DEFS } from '@/cards/registry';
 import { useBoard } from '@/lib/board';
 import { useAuth } from '@/lib/auth';
 import { DEMO } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { Badge, Button, IconButton } from '@/components/ui';
-import { Canvas } from './Canvas';
-import { Inspector } from './Inspector';
-import { PagesPanel } from './PagesPanel';
-import { PagesOverviewPanel } from './PagesOverviewPanel';
-import { ThemePanel } from './ThemePanel';
-import { ScreensPanel } from './ScreensPanel';
-import { AnnouncementsPanel } from './AnnouncementsPanel';
-import { SettingsPanel } from './SettingsPanel';
+import { FeedbackProvider } from './Feedback';
+import { PagesScreen } from './PagesScreen';
+import { PageEditor } from './PageEditor';
+import { ScreensScreen } from './ScreensScreen';
+import { NoticesScreen } from './NoticesScreen';
+import { SettingsScreen } from './SettingsScreen';
 
-type Tab = 'pages' | 'layout' | 'theme' | 'screens' | 'announcements' | 'settings';
+type Tab = 'pages' | 'screens' | 'notices' | 'settings';
 
-const TABS: { id: Tab; label: string; icon: typeof LayoutGrid }[] = [
+const TABS: { id: Tab; label: string; icon: typeof Layers }[] = [
   { id: 'pages', label: 'Pages', icon: Layers },
-  { id: 'layout', label: 'Layout', icon: LayoutGrid },
-  { id: 'theme', label: 'Theme', icon: Palette },
   { id: 'screens', label: 'Screens', icon: MonitorSmartphone },
-  { id: 'announcements', label: 'Announcements', icon: Megaphone },
+  { id: 'notices', label: 'Notices', icon: Megaphone },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
+function useFontLink(url?: string) {
+  useEffect(() => {
+    if (!url) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    document.head.appendChild(link);
+    return () => link.remove();
+  }, [url]);
+}
+
+function LoadingScreen() {
+  return (
+    <div className="cb-control flex min-h-dvh items-center justify-center bg-paper">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex h-14 w-14 animate-pulse items-center justify-center rounded-2xl bg-accent text-white shadow-lg">
+          <LayoutGrid size={24} />
+        </div>
+        <p className="text-sm font-medium text-muted">Opening your board…</p>
+      </div>
+    </div>
+  );
+}
+
 export function ControlApp() {
-  const { config, loading, saveState, error, canUndo, canRedo, mutate, beginHistory, undo, redo, createBoard } =
-    useBoard();
+  return (
+    <FeedbackProvider>
+      <ControlShell />
+    </FeedbackProvider>
+  );
+}
+
+function ControlShell() {
+  const {
+    config,
+    loading,
+    saveState,
+    error,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    createBoard,
+  } = useBoard();
   const { signOut } = useAuth();
   const [tab, setTab] = useState<Tab>('pages');
-  const [activePageId, setActivePageId] = useState<string | null>(null);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+
+  useFontLink(config?.theme.font.url);
 
   useEffect(() => {
-    if (!config) return;
-    const exists = activePageId && config.pages.some((p) => p.id === activePageId);
-    if (exists) return;
-    const fallback = (config.pages ?? []).find((p) => p.id === config.settings.defaultPageId) ?? (config.pages ?? [])[0];
-    setActivePageId(fallback?.id ?? null);
-  }, [config, activePageId]);
+    if (!editingPageId) return;
+    const exists = config?.pages?.some((page) => page.id === editingPageId);
+    if (!exists && config) setEditingPageId(null);
+  }, [config, editingPageId]);
 
-  useEffect(() => {
-    setSelectedCardId(null);
-  }, [activePageId]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
-      const mod = e.metaKey || e.ctrlKey;
-      if (!mod || e.key.toLowerCase() !== 'z') return;
-      e.preventDefault();
-      if (e.shiftKey) redo();
-      else undo();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [undo, redo]);
-
-  if (loading) {
-    return (
-      <div className="cb-control flex min-h-screen items-center justify-center text-sm text-stone-400">
-        Loading your board…
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
   if (!config) {
     return (
-      <div className="cb-control flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-          <LayoutGrid size={24} />
+      <div className="cb-control flex min-h-dvh flex-col items-center justify-center gap-5 bg-paper px-6 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-accent-soft text-accent">
+          <LayoutGrid size={28} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">No board yet</h1>
-          <p className="mt-1 max-w-sm text-sm text-stone-500">
-            Create a board to start adding pages and cards. Screens will pick it up straight away.
+          <h1 className="font-display text-3xl font-semibold tracking-[-0.03em] text-ink">Let’s set up your board</h1>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted">
+            Create the first board and we’ll add a ready-made page you can change.
           </p>
         </div>
         <Button variant="primary" size="lg" onClick={() => void createBoard()}>
-          <Plus size={15} /> Create board
+          <Plus size={17} /> Create my board
         </Button>
         <Button variant="ghost" onClick={() => void signOut()}>
-          <LogOut size={14} /> Sign out
+          <LogOut size={15} /> Sign out
         </Button>
       </div>
     );
   }
 
-  const activePage = (config.pages ?? []).find((p) => p.id === activePageId) ?? (config.pages ?? [])[0] ?? null;
+  const editingPage = editingPageId
+    ? (config.pages ?? []).find((page) => page.id === editingPageId) ?? null
+    : null;
 
-  const addPage = () => {
-    const id = newId('page');
-    const name = `Page ${config.pages.length + 1}`;
-    mutate((draft) => {
-      draft.pages.push({ id, name, transition: 'fade', cards: [] });
-    });
-    setActivePageId(id);
-    setTab('layout');
-  };
+  const showEditor = Boolean(editingPage);
+  const activeTab: Tab = showEditor ? 'pages' : tab;
 
-  const openPageLayout = (pageId: string) => {
-    setActivePageId(pageId);
-    setTab('layout');
-  };
-
-  const duplicatePage = (pageId: string) => {
-    const source = config.pages.find((p) => p.id === pageId);
-    if (!source) return;
-    const id = newId('page');
-    const copy = structuredClone(source);
-    copy.id = id;
-    copy.name = `${source.name} copy`;
-    copy.cards = copy.cards.map((c) => ({ ...c, id: newId('card') }));
-    mutate((draft) => {
-      const index = draft.pages.findIndex((p) => p.id === pageId);
-      draft.pages.splice(index + 1, 0, copy);
-    });
-    setActivePageId(id);
-  };
-
-  const deletePage = (pageId: string) => {
-    if (config.pages.length <= 1) return;
-    const page = config.pages.find((p) => p.id === pageId);
-    if (!page) return;
-    if (!window.confirm(`Delete "${page.name}"? This removes all ${page.cards.length} card${page.cards.length === 1 ? '' : 's'} on it.`))
-      return;
-    const nextPage = config.pages.find((p) => p.id !== pageId);
-    mutate((draft) => {
-      draft.pages = draft.pages.filter((p) => p.id !== pageId);
-      if (!draft.pages.some((p) => p.id === draft.settings.defaultPageId)) {
-        draft.settings.defaultPageId = draft.pages[0]?.id ?? '';
-      }
-      draft.settings.rotation.pageIds = draft.settings.rotation.pageIds.filter((id) => id !== pageId);
-    });
-    if (activePageId === pageId) setActivePageId(nextPage?.id ?? null);
-  };
-
-  const movePage = (pageId: string, direction: -1 | 1) => {
-    mutate((draft) => {
-      const index = draft.pages.findIndex((p) => p.id === pageId);
-      const target = index + direction;
-      if (index < 0 || target < 0 || target >= draft.pages.length) return;
-      const [page] = draft.pages.splice(index, 1);
-      draft.pages.splice(target, 0, page);
-    });
-  };
-
-  const makeDefault = (pageId: string) => {
-    mutate((draft) => {
-      draft.settings.defaultPageId = pageId;
-    });
-  };
-
-  const addCard = (type: CardType) => {
-    if (!activePage) return;
-    const def = CARD_DEFS[type];
-    const layout = findFreeSpot(activePage.cards, def.defaultSize.w, def.defaultSize.h);
-    const id = newId('card');
-    mutate((draft) => {
-      const page = draft.pages.find((p) => p.id === activePage.id);
-      if (!page) return;
-      page.cards.push({ id, type, layout, visible: true, config: defaultCardConfig(type) });
-    });
-    setSelectedCardId(id);
-  };
-
-  const updateLayout = (cardId: string, layout: Rect) => {
-    mutate(
-      (draft) => {
-        const page = (draft.pages ?? []).find((p) => p.id === activePage?.id);
-        const card = page?.cards?.find((c) => c.id === cardId);
-        if (card) card.layout = layout;
-      },
-      { history: false },
-    );
+  const openPage = (pageId: string) => {
+    setEditingPageId(pageId);
+    window.scrollTo({ top: 0 });
   };
 
   const saveLabel =
     saveState === 'saving'
       ? 'Saving…'
       : saveState === 'error'
-        ? 'Save failed'
+        ? 'Couldn’t save'
         : saveState === 'saved'
           ? 'Saved'
-          : 'Ready';
-
-  const saveDot =
-    saveState === 'error'
-      ? 'bg-red-400'
-      : saveState === 'saving'
-        ? 'bg-amber-400 animate-pulse'
-        : 'bg-emerald-500';
+          : '';
 
   return (
-    <div className="cb-control flex min-h-dvh flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-stone-200 bg-white px-3 shadow-sm sm:px-5">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-            <LayoutGrid size={16} />
+    <div className="cb-control min-h-dvh bg-paper text-ink">
+      <div className="mx-auto flex min-h-dvh w-full max-w-[1680px]">
+        {/* ── Desktop sidebar ─────────────────────────────────────────── */}
+        <aside className={cn('sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line/80 px-4 py-6 lg:flex', showEditor && 'lg:hidden')}>
+          <div className="flex items-center gap-3 px-2">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-white shadow-[0_6px_18px_rgba(15,118,110,0.22)]">
+              <LayoutGrid size={20} />
+            </div>
+            <div className="min-w-0">
+              <div className="font-display truncate text-[15px] font-semibold leading-tight tracking-[-0.01em] text-ink">
+                {config.settings.name || 'Cardboard'}
+              </div>
+              <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-muted">
+                Control panel {DEMO ? <Badge tone="amber">Demo</Badge> : null}
+              </div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-bold leading-tight text-stone-900">{config.settings.name}</div>
-            <div className="text-[10px] text-stone-400">Control panel</div>
-          </div>
-          {DEMO ? <Badge tone="amber">Demo</Badge> : null}
-        </div>
 
-        {/* Desktop nav */}
-        <nav className="ml-3 hidden flex-1 items-center gap-0.5 md:flex">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition',
-                tab === id
-                  ? 'bg-amber-50 text-amber-700'
-                  : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800',
-              )}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-1.5">
-          <div className="hidden items-center gap-1.5 sm:flex">
-            <span className={cn('h-2 w-2 rounded-full', saveDot)} />
-            <span className="text-xs text-stone-400">{saveLabel}</span>
-          </div>
-          <IconButton label="Undo" onClick={undo} disabled={!canUndo}>
-            <Undo2 size={14} />
-          </IconButton>
-          <IconButton label="Redo" onClick={redo} disabled={!canRedo}>
-            <Redo2 size={14} />
-          </IconButton>
-          <a
-            href="/"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-600 shadow-sm transition hover:bg-stone-50"
-          >
-            <ExternalLink size={13} />
-            <span className="hidden sm:inline">View display</span>
-          </a>
-          <IconButton label="Sign out" onClick={() => void signOut()}>
-            <LogOut size={14} />
-          </IconButton>
-        </div>
-      </header>
-
-      {/* Mobile nav */}
-      <nav className="flex items-center gap-1 overflow-x-auto border-b border-stone-200 bg-white px-2 py-1.5 md:hidden">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={cn(
-              'inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
-              tab === id ? 'bg-amber-50 text-amber-700' : 'text-stone-500',
-            )}
-          >
-            <Icon size={12} />
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      {error ? (
-        <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">{error}</div>
-      ) : null}
-
-      {/* Pages tab — order, rotation and per-page timing */}
-      {tab === 'pages' ? (
-        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
-          <PagesOverviewPanel
-            onOpenPage={openPageLayout}
-            onAddPage={addPage}
-          />
-        </main>
-      ) : null}
-
-      {/* Layout tab — the page editor */}
-      {tab === 'layout' && activePage ? (
-        <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_20rem]">
-          <PagesPanel
-            className="hidden md:flex"
-            pages={config.pages}
-            activePageId={activePage.id}
-            defaultPageId={config.settings.defaultPageId}
-            onSelectPage={setActivePageId}
-            onAddPage={addPage}
-            onDuplicatePage={duplicatePage}
-            onDeletePage={deletePage}
-            onMovePage={movePage}
-            onMakeDefault={makeDefault}
-          />
-
-          <div className="flex min-h-0 flex-col overflow-y-auto">
-            {/* Mobile page picker */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-stone-200 bg-white px-3 py-2 md:hidden">
-              <select
-                className="h-9 flex-1 appearance-none rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-800 outline-none focus:border-amber-400"
-                value={activePage.id}
-                onChange={(e) => setActivePageId(e.target.value)}
+          <nav className="mt-8 space-y-1">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  setTab(id);
+                  setEditingPageId(null);
+                  window.scrollTo({ top: 0 });
+                }}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition',
+                  activeTab === id
+                    ? 'bg-accent-soft text-accent'
+                    : 'text-muted hover:bg-[#efece4] hover:text-ink',
+                )}
               >
-                {config.pages.map((page) => (
-                  <option key={page.id} value={page.id}>
-                    {page.name}
-                  </option>
-                ))}
-              </select>
-              <Button size="sm" variant="primary" onClick={addPage}>
-                <Plus size={13} /> Add page
-              </Button>
-            </div>
+                <Icon size={19} strokeWidth={activeTab === id ? 2.2 : 1.8} />
+                {label}
+              </button>
+            ))}
+          </nav>
 
-            <div className="flex min-h-[560px] flex-1 flex-col p-3 sm:p-4">
-              <Canvas
-                page={activePage}
-                selectedId={selectedCardId}
-                onSelect={setSelectedCardId}
-                onLayoutChange={updateLayout}
-                onBeginHistory={beginHistory}
-                onAddCard={addCard}
+          <div className="mt-auto space-y-3">
+            <a
+              href="/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-3 rounded-2xl border border-line bg-white px-3.5 py-3 text-sm font-semibold text-ink transition hover:border-[#d6d0c2] hover:bg-[#fbfaf7]"
+            >
+              <MonitorSmartphone size={18} className="text-accent" />
+              <span className="min-w-0 flex-1">Open display</span>
+              <ExternalLink size={14} className="text-muted" />
+            </a>
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[13px] font-medium text-muted transition hover:bg-[#efece4] hover:text-ink"
+            >
+              <LogOut size={16} /> Sign out
+            </button>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* ── Top bar ────────────────────────────────────────────────── */}
+          <header className="sticky top-0 z-40 border-b border-line/70 bg-paper/90 backdrop-blur-md">
+            <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+              <div className={cn('flex min-w-0 items-center gap-2.5', showEditor ? '' : 'lg:hidden')}>
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white">
+                  <LayoutGrid size={17} />
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate font-display text-sm font-semibold leading-tight text-ink">
+                    {config.settings.name || 'Cardboard'}
+                  </div>
+                  <div className="text-[10px] font-medium text-muted">Control panel</div>
+                </div>
+              </div>
+
+              <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+                {saveLabel ? (
+                  <div
+                    className={cn(
+                      'hidden items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:flex',
+                      saveState === 'error' ? 'text-danger' : 'text-muted',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'h-1.5 w-1.5 rounded-full',
+                        saveState === 'error'
+                          ? 'bg-danger'
+                          : saveState === 'saving'
+                            ? 'animate-pulse bg-amber-500'
+                            : 'bg-emerald-500',
+                      )}
+                    />
+                    {saveLabel}
+                  </div>
+                ) : null}
+
+                <div className="flex items-center rounded-xl border border-line bg-white p-0.5 shadow-sm">
+                  <IconButton label="Undo" onClick={undo} disabled={!canUndo} className="h-8 w-8 rounded-lg">
+                    <Undo2 size={15} />
+                  </IconButton>
+                  <IconButton label="Redo" onClick={redo} disabled={!canRedo} className="h-8 w-8 rounded-lg">
+                    <Redo2 size={15} />
+                  </IconButton>
+                </div>
+
+                <a
+                  href="/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-white px-3 text-[13px] font-semibold text-ink shadow-sm transition hover:border-[#d6d0c2] hover:bg-[#fbfaf7] lg:hidden"
+                >
+                  <ExternalLink size={14} className="text-accent" />
+                  <span className="hidden sm:inline">Open display</span>
+                </a>
+
+                {DEMO ? <Badge tone="amber" className="hidden sm:inline-flex lg:hidden">Demo</Badge> : null}
+              </div>
+            </div>
+            {error ? (
+              <div className="border-t border-[#efd5ce] bg-[#fdf3f0] px-4 py-2 text-[13px] font-medium text-danger sm:px-6 lg:px-8">
+                {error}
+              </div>
+            ) : null}
+          </header>
+
+          <main className={cn('min-w-0 flex-1', showEditor ? '' : 'px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8')}>
+            {showEditor && editingPage ? (
+              <PageEditor
+                pageId={editingPage.id}
+                onBack={() => setEditingPageId(null)}
+                onOpenPage={openPage}
+                onOpenSettings={() => {
+                  setEditingPageId(null);
+                  setTab('settings');
+                }}
               />
+            ) : (
+              <>
+                {tab === 'pages' ? (
+                  <PagesScreen
+                    onOpenPage={openPage}
+                    onOpenSettings={() => setTab('settings')}
+                  />
+                ) : null}
+                {tab === 'screens' ? <ScreensScreen /> : null}
+                {tab === 'notices' ? <NoticesScreen /> : null}
+                {tab === 'settings' ? <SettingsScreen /> : null}
+              </>
+            )}
+          </main>
+
+          {/* ── Mobile tab bar ─────────────────────────────────────────── */}
+          <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+            <div className="grid grid-cols-4">
+              {TABS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => {
+                    setTab(id);
+                    setEditingPageId(null);
+                    window.scrollTo({ top: 0 });
+                  }}
+                  className={cn(
+                    'flex flex-col items-center gap-1 py-2.5 text-[10px] font-semibold transition',
+                    activeTab === id ? 'text-accent' : 'text-muted',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'flex h-8 w-12 items-center justify-center rounded-xl transition',
+                      activeTab === id ? 'bg-accent-soft' : '',
+                    )}
+                  >
+                    <Icon size={19} strokeWidth={activeTab === id ? 2.2 : 1.8} />
+                  </span>
+                  {label}
+                </button>
+              ))}
             </div>
-          </div>
-
-          <aside className="hidden min-h-0 overflow-y-auto border-l border-stone-200 bg-stone-50 p-4 xl:block">
-            <Inspector page={activePage} selectedId={selectedCardId} onSelect={setSelectedCardId} />
-          </aside>
-
-          <div className="border-t border-stone-200 bg-stone-50 p-4 xl:hidden">
-            <Inspector page={activePage} selectedId={selectedCardId} onSelect={setSelectedCardId} />
-          </div>
+          </nav>
         </div>
-      ) : null}
-
-      {tab === 'theme' ? (
-        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
-          <ThemePanel />
-        </main>
-      ) : null}
-
-      {tab === 'screens' ? (
-        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
-          <ScreensPanel />
-        </main>
-      ) : null}
-
-      {tab === 'announcements' ? (
-        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
-          <AnnouncementsPanel />
-        </main>
-      ) : null}
-
-      {tab === 'settings' ? (
-        <main className="mx-auto w-full max-w-2xl p-4 sm:p-6">
-          <SettingsPanel />
-        </main>
-      ) : null}
+      </div>
     </div>
   );
 }

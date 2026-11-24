@@ -7,7 +7,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="cb-control flex min-h-screen items-center justify-center text-sm text-stone-400">
+      <div className="cb-control flex min-h-screen items-center justify-center bg-paper text-sm text-muted">
         Checking your session…
       </div>
     );

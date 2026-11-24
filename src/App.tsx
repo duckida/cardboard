@@ -19,7 +19,7 @@ export function App() {
               path="/control"
               element={
                 <RequireAdmin>
-                  <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#080a11] text-sm text-slate-500">Loading control panel…</div>}>
+                  <Suspense fallback={<div className="cb-control flex min-h-screen items-center justify-center bg-paper text-sm text-muted">Opening the control panel…</div>}>
                     <ControlApp />
                   </Suspense>
                 </RequireAdmin>
