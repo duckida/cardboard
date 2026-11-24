@@ -397,9 +397,6 @@ function CardContentFields({
               type="url"
             />
           </Field>
-          <Field label="Name" help="Only used to help you recognise this item.">
-            <Input value={cfg.title ?? ''} onChange={(event) => set('title', event.target.value)} placeholder="e.g. School news" />
-          </Field>
           <Advanced>
             <Field label="Reload every" help="Leave at 0 to keep the page as it is.">
               <Select value={String(cfg.refreshSec ?? 0)} onChange={(event) => set('refreshSec', Number(event.target.value))}>

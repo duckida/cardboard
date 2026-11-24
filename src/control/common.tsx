@@ -39,7 +39,7 @@ export function cardLabel(card: Card): string {
     case 'video':
       return 'Video';
     case 'iframe':
-      return config.title?.trim() || 'Web page';
+      return 'Web page';
     case 'markdown': {
       const line = String(config.markdown ?? '')
         .split('\n')

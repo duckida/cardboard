@@ -107,13 +107,21 @@ export function SettingsScreen() {
   const theme = config.theme;
   const pages = config.pages;
 
-  const patchSettings = (fn: (s: Settings) => void) => mutate((draft) => fn(draft.settings));
-  const setTheme = (fn: (t: Theme) => void) => mutate((draft) => fn(draft.theme));
+  const patchSettings = (fn: (s: Settings) => void) =>
+    mutate((draft) => {
+      fn(draft.settings);
+    });
+  const setTheme = (fn: (t: Theme) => void) =>
+    mutate((draft) => {
+      fn(draft.theme);
+    });
 
   const applyPreset = (name: string) => {
     const preset = THEME_PRESETS[name] ?? {};
     const next = mergeTheme(DEFAULT_THEME, preset);
-    setTheme((draft) => Object.assign(draft, structuredClone(next)));
+    setTheme((draft) => {
+      Object.assign(draft, structuredClone(next));
+    });
     toast(`“${name}” look applied.`, 'success');
   };
 

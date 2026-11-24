@@ -212,7 +212,6 @@ export const CARD_DEFS: Record<CardType, CardDef> = {
     defaultSize: { w: 12, h: 10 },
     fields: [
       { key: 'url', label: 'URL', type: 'url', placeholder: 'https://…' },
-      { key: 'title', label: 'Title', type: 'text' },
       { key: 'refreshSec', label: 'Refresh every (seconds, 0 = never)', type: 'number', min: 0, max: 86400 },
     ],
     Component: IframeCard,
