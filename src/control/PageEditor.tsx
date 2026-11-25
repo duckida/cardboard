@@ -656,34 +656,29 @@ export function PageEditor({
         onClose={() => setBackgroundOpen(false)}
         title="Page background"
         description="This changes the background of this page only."
-        footer={
-          <>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                updatePage((target) => {
-                  target.background = undefined;
-                });
-                setBackgroundOpen(false);
-              }}
-              disabled={!page.background}
-            >
-              Use the board background
-            </Button>
-            <Button variant="primary" onClick={() => setBackgroundOpen(false)}>
-              Done
-            </Button>
-          </>
-        }
       >
-        <BackgroundFields
-          value={page.background ?? theme.background}
-          onChange={(next) =>
-            updatePage((target) => {
-              target.background = next;
-            })
-          }
-        />
+        <div className="space-y-4">
+          <BackgroundFields
+            value={page.background ?? theme.background}
+            onChange={(next) =>
+              updatePage((target) => {
+                target.background = next;
+              })
+            }
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              updatePage((target) => {
+                target.background = undefined;
+              });
+            }}
+            disabled={!page.background}
+          >
+            Use the board background
+          </Button>
+        </div>
       </Modal>
 
       {previewOpen

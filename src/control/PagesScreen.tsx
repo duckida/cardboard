@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -17,17 +17,7 @@ import type { Page } from '@shared/types';
 import { newId } from '@shared/ids';
 import { useBoard } from '@/lib/board';
 import { cn } from '@/lib/cn';
-import {
-  Badge,
-  Button,
-  EmptyState,
-  Field,
-  Input,
-  Modal,
-  Panel,
-  SectionHeading,
-  Toggle,
-} from '@/components/ui';
+import { Button, EmptyState, Input, Panel, SectionHeading, Toggle } from '@/components/ui';
 import { useFeedback } from './Feedback';
 import { MenuButton, MenuDivider, MenuItem } from './Menu';
 import { PageStage } from './PageStage';
@@ -54,6 +44,7 @@ export function PagesScreen({
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const renameCancelled = useRef(false);
 
   if (!config) return null;
 
@@ -127,18 +118,24 @@ export function PagesScreen({
   };
 
   const openRename = (page: Page) => {
+    renameCancelled.current = false;
     setRenameId(page.id);
     setRenameValue(page.name);
   };
 
   const saveRename = () => {
+    if (renameCancelled.current) {
+      renameCancelled.current = false;
+      return;
+    }
     const name = renameValue.trim();
-    if (!renameId || !name) return;
+    if (!renameId) return;
+    setRenameId(null);
+    if (!name) return;
     mutate((draft) => {
       const page = draft.pages.find((item) => item.id === renameId);
       if (page) page.name = name;
     });
-    setRenameId(null);
   };
 
   return (
@@ -336,19 +333,39 @@ export function PagesScreen({
                     </div>
 
                     <div className="flex items-center gap-3 p-4">
-                      <button
-                        type="button"
-                        onClick={() => onOpenPage(page.id)}
-                        className="min-w-0 flex-1 text-left focus-visible:outline-none"
-                      >
-                        <div className="truncate text-sm font-semibold text-ink">{page.name}</div>
-                        <div className="mt-0.5 text-[12px] text-muted">
-                          {page.cards.length === 0
-                            ? 'Empty page'
-                            : `${page.cards.length} item${page.cards.length === 1 ? '' : 's'}`}
-                          {page.rotationSec ? ` · stays ${page.rotationSec}s` : ''}
-                        </div>
-                      </button>
+                      {renameId === page.id ? (
+                        <Input
+                          value={renameValue}
+                          onChange={(event) => setRenameValue(event.target.value)}
+                          onBlur={saveRename}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.currentTarget.blur();
+                            } else if (event.key === 'Escape') {
+                              renameCancelled.current = true;
+                              setRenameId(null);
+                            }
+                          }}
+                          autoFocus
+                          maxLength={60}
+                          aria-label="Page name"
+                          className="h-9 min-w-0 flex-1"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onOpenPage(page.id)}
+                          className="min-w-0 flex-1 text-left focus-visible:outline-none"
+                        >
+                          <div className="truncate text-sm font-semibold text-ink">{page.name}</div>
+                          <div className="mt-0.5 text-[12px] text-muted">
+                            {page.cards.length === 0
+                              ? 'Empty page'
+                              : `${page.cards.length} item${page.cards.length === 1 ? '' : 's'}`}
+                            {page.rotationSec ? ` · stays ${page.rotationSec}s` : ''}
+                          </div>
+                        </button>
+                      )}
 
                       <Button size="sm" variant="secondary" onClick={() => onOpenPage(page.id)}>
                         Edit
@@ -408,35 +425,6 @@ export function PagesScreen({
         <MonitorPlay size={15} />
         Changes appear on screens within a few seconds.
       </div>
-
-      <Modal
-        open={Boolean(renameId)}
-        onClose={() => setRenameId(null)}
-        title="Rename page"
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setRenameId(null)}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={saveRename} disabled={!renameValue.trim()}>
-              Save name
-            </Button>
-          </>
-        }
-      >
-        <Field label="Page name">
-          <Input
-            value={renameValue}
-            onChange={(event) => setRenameValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') saveRename();
-            }}
-            autoFocus
-            maxLength={60}
-          />
-        </Field>
-      </Modal>
     </div>
   );
 }

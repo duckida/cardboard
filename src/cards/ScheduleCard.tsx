@@ -17,7 +17,6 @@ export function ScheduleCard({ card }: { card: Card }) {
   const boardConfig = useBoard().config;
   const timezone = boardConfig?.settings.timezone ?? '';
   const calendarUrl = boardConfig?.settings.calendar.url ?? '';
-  const calendarIncludeInternal = boardConfig?.settings.calendar.includeInternal ?? false;
   const [state, setState] = useState<Response | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -32,7 +31,6 @@ export function ScheduleCard({ card }: { card: Card }) {
         const params = new URLSearchParams({
           days: String(cfg.daysAhead),
           url: calendarUrl,
-          includeInternal: calendarIncludeInternal ? '1' : '0',
         });
         const response = await fetch(`/api/schedule?${params.toString()}`);
         if (!response.ok) throw new Error('schedule');
@@ -54,7 +52,7 @@ export function ScheduleCard({ card }: { card: Card }) {
       alive = false;
       window.clearInterval(timer);
     };
-  }, [cfg.daysAhead, calendarUrl, calendarIncludeInternal]);
+  }, [cfg.daysAhead, calendarUrl]);
 
   const events = useMemo(() => {
     const all = state?.events ?? [];

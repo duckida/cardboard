@@ -5,7 +5,7 @@ import { CARD_TITLES } from './common';
 
 const GROUPS: { title: string; types: CardType[] }[] = [
   { title: 'Photos & video', types: ['photo', 'image', 'video'] },
-  { title: 'Everyday information', types: ['clock', 'weather', 'schedule', 'countdown', 'quote'] },
+  { title: 'Everyday information', types: ['clock', 'weather', 'schedule', 'sports', 'countdown', 'quote'] },
   { title: 'Your own content', types: ['markdown', 'iframe'] },
 ];
 
@@ -16,6 +16,7 @@ const DESCRIPTIONS: Record<CardType, string> = {
   clock: 'The time and date.',
   weather: 'Today and the next few days.',
   schedule: 'Events from your school calendar.',
+  sports: 'Fixtures, teams and venues from a sports calendar link.',
   countdown: 'Days until something important.',
   quote: 'A thought for the day.',
   markdown: 'A heading and some words.',

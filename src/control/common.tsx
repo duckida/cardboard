@@ -26,6 +26,7 @@ export const CARD_TITLES: Record<Card['type'], string> = {
   weather: 'Weather',
   quote: 'Quote',
   schedule: 'Timetable',
+  sports: 'Sports fixtures',
   countdown: 'Countdown',
 };
 
@@ -55,6 +56,8 @@ export function cardLabel(card: Card): string {
       return 'Quote';
     case 'schedule':
       return config.title?.trim() || 'Timetable';
+    case 'sports':
+      return config.title?.trim() || 'Sports fixtures';
     case 'countdown':
       return config.label?.trim() || 'Countdown';
     default:
@@ -93,6 +96,11 @@ export function cardSummary(card: Card): string {
       return 'A quote from the collection';
     case 'schedule': {
       const days = Number(config.daysAhead) || 7;
+      return `Next ${days} day${days === 1 ? '' : 's'}`;
+    }
+    case 'sports': {
+      if (!config.url) return 'No sports calendar yet';
+      const days = Number(config.daysAhead) || 14;
       return `Next ${days} day${days === 1 ? '' : 's'}`;
     }
     case 'countdown':

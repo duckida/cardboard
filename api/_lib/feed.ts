@@ -3,7 +3,6 @@ import type { ScheduleEvent } from '../../shared/types';
 
 export interface FeedConfig {
   url: string;
-  includeInternal: boolean;
   updatedAt: number;
 }
 
@@ -17,13 +16,6 @@ export interface CachedSchedule {
 export function normalizeFeedUrl(rawUrl: string): string {
   const value = rawUrl.trim();
   return value.replace(/^webcal:\/\//i, 'https://').replace(/^webcals:\/\//i, 'https://');
-}
-
-export function withScope(rawUrl: string, includeInternal: boolean): string {
-  const url = new URL(normalizeFeedUrl(rawUrl));
-  if (includeInternal) url.searchParams.set('A', '1');
-  else url.searchParams.delete('A');
-  return url.toString();
 }
 
 interface PropertyLike {
@@ -140,7 +132,7 @@ export function parseIcs(ics: string, from: Date, to: Date): ScheduleEvent[] {
 }
 
 export async function fetchFeed(feed: FeedConfig): Promise<ScheduleEvent[]> {
-  const target = withScope(feed.url, feed.includeInternal);
+  const target = normalizeFeedUrl(feed.url);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 9000);
   try {

@@ -7,6 +7,7 @@ import {
   Images,
   Quote,
   Timer,
+  Trophy,
   Type,
   Video,
   type LucideIcon,
@@ -21,6 +22,7 @@ import { VideoCard } from './VideoCard';
 import { IframeCard } from './IframeCard';
 import { MarkdownCard } from './MarkdownCard';
 import { ScheduleCard } from './ScheduleCard';
+import { SportsCard } from './SportsCard';
 import { CountdownCard } from './CountdownCard';
 
 export interface CardDef {
@@ -235,6 +237,22 @@ export const CARD_DEFS: Record<CardType, CardDef> = {
       { key: 'showLocation', label: 'Show location', type: 'toggle' },
     ],
     Component: ScheduleCard,
+  },
+  sports: {
+    type: 'sports',
+    name: 'Sports',
+    description: 'Fixtures from your SOCS sports calendar link.',
+    icon: Trophy,
+    defaultSize: { w: 10, h: 10 },
+    fields: [
+      { key: 'url', label: 'Sports calendar link', type: 'url', placeholder: 'https://…/Calendar.asp?Id=…' },
+      { key: 'title', label: 'Heading', type: 'text' },
+      { key: 'daysAhead', label: 'Days ahead', type: 'number', min: 1, max: 60 },
+      { key: 'maxFixtures', label: 'Max fixtures', type: 'number', min: 1, max: 40 },
+      { key: 'showTeam', label: 'Show teams', type: 'toggle' },
+      { key: 'showVenue', label: 'Show home or away', type: 'toggle' },
+    ],
+    Component: SportsCard,
   },
   markdown: {
     type: 'markdown',

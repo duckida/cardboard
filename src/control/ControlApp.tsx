@@ -8,6 +8,7 @@ import {
   MonitorSmartphone,
   Plus,
   Redo2,
+  Save,
   Settings as SettingsIcon,
   Undo2,
 } from 'lucide-react';
@@ -75,6 +76,7 @@ function ControlShell() {
     undo,
     redo,
     createBoard,
+    saveNow,
   } = useBoard();
   const { signOut } = useAuth();
   const [tab, setTab] = useState<Tab>('pages');
@@ -213,26 +215,21 @@ function ControlShell() {
               </div>
 
               <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-                {saveLabel ? (
-                  <div
-                    className={cn(
-                      'hidden items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:flex',
-                      saveState === 'error' ? 'text-danger' : 'text-muted',
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'h-1.5 w-1.5 rounded-full',
-                        saveState === 'error'
-                          ? 'bg-danger'
-                          : saveState === 'saving'
-                            ? 'animate-pulse bg-amber-500'
-                            : 'bg-emerald-500',
-                      )}
-                    />
-                    {saveLabel}
-                  </div>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void saveNow()}
+                  disabled={saveState === 'saving'}
+                  title="Save changes now"
+                  className={cn(
+                    'inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-[12px] font-semibold transition disabled:opacity-60',
+                    saveState === 'error'
+                      ? 'border-[#efd5ce] bg-[#fdf3f0] text-danger hover:bg-[#fbe8e3]'
+                      : 'border-line bg-white text-ink hover:border-[#d6d0c2] hover:bg-[#fbfaf7]',
+                  )}
+                >
+                  <Save size={14} className={saveState === 'saving' ? 'animate-pulse' : undefined} />
+                  <span className="hidden sm:inline">{saveState === 'error' ? 'Retry save' : saveLabel || 'Save'}</span>
+                </button>
 
                 <div className="flex items-center rounded-xl border border-line bg-white p-0.5 shadow-sm">
                   <IconButton label="Undo" onClick={undo} disabled={!canUndo} className="h-8 w-8 rounded-lg">

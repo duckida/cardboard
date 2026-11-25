@@ -72,6 +72,15 @@ export const scheduleSchema = z.object({
   title: z.string().default('This week'),
 });
 
+export const sportsSchema = z.object({
+  url: z.string().default(''),
+  daysAhead: z.number().min(1).max(60).default(14),
+  maxFixtures: z.number().min(1).max(40).default(8),
+  showTeam: z.boolean().default(true),
+  showVenue: z.boolean().default(true),
+  title: z.string().default('Fixtures'),
+});
+
 export const markdownSchema = z.object({
   markdown: z.string().default(''),
 });
@@ -91,6 +100,7 @@ export const cardSchemas: Record<CardType, z.ZodTypeAny> = {
   video: videoSchema,
   iframe: iframeSchema,
   schedule: scheduleSchema,
+  sports: sportsSchema,
   markdown: markdownSchema,
   countdown: countdownSchema,
 };

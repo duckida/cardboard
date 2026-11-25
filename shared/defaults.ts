@@ -12,6 +12,7 @@ import type {
 
 export const FONT_STACKS: Record<string, string> = {
   Inter: "'Inter', system-ui, -apple-system, sans-serif",
+  Raleway: "'Raleway', 'Inter', system-ui, sans-serif",
   'Space Grotesk': "'Space Grotesk', 'Inter', system-ui, sans-serif",
   'Playfair Display': "'Playfair Display', Georgia, serif",
   'JetBrains Mono': "'JetBrains Mono', ui-monospace, monospace",
@@ -186,7 +187,7 @@ export function defaultBoard(): BoardConfig {
     rotation: { enabled: false, pageIds: [home.id, week.id], intervalSec: 30 },
     maintenance: { reloadAt: '03:30', blankOutsideHours: false },
     lowPower: false,
-    calendar: { url: '', includeInternal: false },
+    calendar: { url: '' },
   };
 
   return {

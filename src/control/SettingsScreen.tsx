@@ -145,7 +145,6 @@ export function SettingsScreen() {
         body: JSON.stringify({
           probe: true,
           url,
-          includeInternal: settings.calendar.includeInternal,
         }),
       });
       const json = (await response.json().catch(() => ({}))) as Record<string, unknown>;
@@ -363,8 +362,12 @@ export function SettingsScreen() {
             />
           </Field>
           <Field label="Background">
-            <Button variant="secondary" className="w-full justify-start" onClick={() => setBackgroundOpen(true)}>
-              <ImageIcon size={15} /> Change background
+            <Button
+              variant="secondary"
+              className="w-full justify-start"
+              onClick={() => setBackgroundOpen((value) => !value)}
+            >
+              <ImageIcon size={15} /> {backgroundOpen ? 'Hide background options' : 'Change background'}
             </Button>
           </Field>
         </div>
@@ -485,12 +488,7 @@ export function SettingsScreen() {
 
         {backgroundOpen ? (
           <div className="space-y-3 rounded-2xl border border-line bg-[#faf8f3] p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-[12px] font-semibold text-ink">Board background</div>
-              <Button size="sm" variant="ghost" onClick={() => setBackgroundOpen(false)}>
-                Done
-              </Button>
-            </div>
+            <div className="text-[12px] font-semibold text-ink">Board background</div>
             <BackgroundFields
               value={theme.background}
               onChange={(next) =>
@@ -558,16 +556,6 @@ export function SettingsScreen() {
             }
           />
         </Field>
-        <ToggleRow
-          label="Include internal events"
-          description="Adds events marked as internal or approved."
-          checked={settings.calendar.includeInternal}
-          onChange={(includeInternal) =>
-            patchSettings((s) => {
-              s.calendar.includeInternal = includeInternal;
-            })
-          }
-        />
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"

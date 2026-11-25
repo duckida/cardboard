@@ -12,6 +12,7 @@ import {
   Search,
   Timer,
   Trash2,
+  Trophy,
   Type,
   Video,
 } from 'lucide-react';
@@ -410,6 +411,62 @@ function CardContentFields({
         </>
       );
 
+    case 'sports':
+      return (
+        <>
+          <Field
+            label="Sports calendar link"
+            help="Paste the sports calendar page from your school’s sports website, for example https://sports.example.org/Calendar.asp?Id=2272"
+          >
+            <Input
+              value={cfg.url ?? ''}
+              onChange={(event) => set('url', event.target.value)}
+              placeholder="https://sports.example.org/Calendar.asp?Id=2272"
+              type="url"
+            />
+          </Field>
+          <Field label="Heading">
+            <Input value={cfg.title ?? ''} onChange={(event) => set('title', event.target.value)} placeholder="e.g. Fixtures" />
+          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="How far ahead">
+              <Select value={String(cfg.daysAhead ?? 14)} onChange={(event) => set('daysAhead', Number(event.target.value))}>
+                <option value="7">Next week</option>
+                <option value="14">Next 2 weeks</option>
+                <option value="30">Next month</option>
+              </Select>
+            </Field>
+            <Field label="How many fixtures">
+              <Select value={String(cfg.maxFixtures ?? 8)} onChange={(event) => set('maxFixtures', Number(event.target.value))}>
+                {[3, 5, 8, 12, 20].map((value) => (
+                  <option key={value} value={value}>{value} fixtures</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <ToggleRow
+            label="Show the teams"
+            description="For example Girls-U13A or Boys-U11B."
+            checked={cfg.showTeam !== false}
+            onChange={(value) => set('showTeam', value)}
+          />
+          <ToggleRow
+            label="Show home or away"
+            description="Adds Home, Away or Venue TBC next to each fixture."
+            checked={cfg.showVenue !== false}
+            onChange={(value) => set('showVenue', value)}
+          />
+          <div className="rounded-2xl bg-[#faf8f3] p-3">
+            <div className="flex items-start gap-2.5">
+              <CalendarDays size={17} className="mt-0.5 shrink-0 text-muted" />
+              <p className="text-[12px] leading-relaxed text-muted">
+                Fixtures are read from the sports calendar page. If nothing appears, check the link opens in a normal browser.
+              </p>
+            </div>
+          </div>
+        </>
+      );
+
     case 'schedule':
       return (
         <>
@@ -682,4 +739,4 @@ function WeatherFields({
   );
 }
 
-export const CARD_ICONS = { Clock, CloudSun, Quote, Images, Image, Video, Frame, CalendarDays, Type, Timer };
+export const CARD_ICONS = { Clock, CloudSun, Quote, Images, Image, Video, Frame, CalendarDays, Trophy, Type, Timer };

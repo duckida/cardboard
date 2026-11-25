@@ -176,7 +176,6 @@ export function normalizeBoardConfig(raw: unknown): BoardConfig {
     lowPower: Boolean(s.lowPower),
     calendar: {
       url: typeof s.calendar?.url === 'string' ? s.calendar.url : (typeof s.calendarUrl === 'string' ? s.calendarUrl : ''),
-      includeInternal: Boolean(s.calendar?.includeInternal ?? s.calendarIncludeInternal),
     },
   };
 

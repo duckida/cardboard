@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeFeedUrl, parseIcs, withinWindow, withScope } from '../api/_lib/feed';
+import { normalizeFeedUrl, parseIcs, withinWindow } from '../api/_lib/feed';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -164,15 +164,6 @@ describe('withinWindow', () => {
 describe('feed URLs', () => {
   it('normalizes webcal URLs to https', () => {
     expect(normalizeFeedUrl('webcal://cal.example.com/CalendarSync.ashx?ID=1')).toBe(
-      'https://cal.example.com/CalendarSync.ashx?ID=1',
-    );
-  });
-
-  it('adds and removes the A=1 internal-events parameter', () => {
-    expect(withScope('https://cal.example.com/CalendarSync.ashx?ID=1', true)).toBe(
-      'https://cal.example.com/CalendarSync.ashx?ID=1&A=1',
-    );
-    expect(withScope('https://cal.example.com/CalendarSync.ashx?ID=1&A=1', false)).toBe(
       'https://cal.example.com/CalendarSync.ashx?ID=1',
     );
   });

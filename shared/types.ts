@@ -11,6 +11,7 @@ export type CardType =
   | 'video'
   | 'iframe'
   | 'schedule'
+  | 'sports'
   | 'markdown'
   | 'countdown';
 
@@ -100,7 +101,7 @@ export interface Settings {
   rotation: { enabled: boolean; pageIds: string[]; intervalSec: number };
   maintenance: { reloadAt: string | null; blankOutsideHours: boolean };
   lowPower: boolean;
-  calendar: { url: string; includeInternal: boolean };
+  calendar: { url: string };
 }
 
 export interface BoardConfig {
@@ -255,6 +256,27 @@ export interface ScheduleConfig {
   maxEvents: number;
   categories: string[];
   showLocation: boolean;
+  title: string;
+}
+
+export interface SportsFixture {
+  id: string;
+  /** Calendar date in the sports site's local time, as YYYY-MM-DD. */
+  date: string;
+  /** Kick-off or start time, as shown on the sports site. */
+  time: string;
+  sport: string;
+  teams: string[];
+  opponent: string;
+  venue: 'H' | 'A' | 'N' | 'TBC' | '';
+}
+
+export interface SportsConfig {
+  url: string;
+  daysAhead: number;
+  maxFixtures: number;
+  showTeam: boolean;
+  showVenue: boolean;
   title: string;
 }
 
