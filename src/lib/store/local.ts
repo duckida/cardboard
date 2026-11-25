@@ -1,4 +1,4 @@
-import type { Announcement, Asset, BoardConfig, Command, ScheduleMeta, Screen } from '@shared/types';
+import type { Announcement, Asset, BoardConfig, Command, ScheduleMeta, Screen, StudentArtItem } from '@shared/types';
 import { defaultBoard } from '@shared/defaults';
 import { newId } from '@shared/ids';
 import type { BoardStore, SaveOptions, Unsubscribe } from './types';
@@ -41,6 +41,7 @@ export class LocalStore implements BoardStore {
     if (!localStorage.getItem(PREFIX + 'announcements')) write('announcements', []);
     if (!localStorage.getItem(PREFIX + 'screens')) write('screens', {});
     if (!localStorage.getItem(PREFIX + 'assets')) write('assets', []);
+    if (!localStorage.getItem(PREFIX + 'studentArt')) write('studentArt', []);
     if (!localStorage.getItem(PREFIX + 'meta')) write('meta', { revision: 1, updatedAt: Date.now() });
   }
 
@@ -177,6 +178,21 @@ export class LocalStore implements BoardStore {
   async deleteAsset(id: string) {
     write('assets', read<Asset[]>('assets', []).filter((a) => a.id !== id));
     this.notify('assets');
+  }
+
+  subscribeStudentArt(cb: (items: StudentArtItem[]) => void): Unsubscribe {
+    return this.listen('studentArt', () => cb(read<StudentArtItem[]>('studentArt', [])));
+  }
+
+  async saveStudentArt(item: StudentArtItem) {
+    const items = read<StudentArtItem[]>('studentArt', []);
+    write('studentArt', items.some((a) => a.id === item.id) ? items.map((a) => (a.id === item.id ? item : a)) : [...items, item]);
+    this.notify('studentArt');
+  }
+
+  async deleteStudentArt(id: string) {
+    write('studentArt', read<StudentArtItem[]>('studentArt', []).filter((a) => a.id !== id));
+    this.notify('studentArt');
   }
 
   subscribeScheduleMeta(cb: (meta: ScheduleMeta | null) => void): Unsubscribe {

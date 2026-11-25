@@ -13,10 +13,11 @@ export type CardType =
   | 'schedule'
   | 'sports'
   | 'markdown'
-  | 'countdown';
+  | 'countdown'
+  | 'studentArt';
 
 /** Card types that look best edge-to-edge. The Fullscreen option is offered for these. */
-export const FULLSCREEN_CARD_TYPES: CardType[] = ['image', 'video', 'iframe'];
+export const FULLSCREEN_CARD_TYPES: CardType[] = ['image', 'video', 'iframe', 'studentArt'];
 
 export interface Rect {
   x: number;
@@ -222,6 +223,26 @@ export interface QuoteConfig {
 
 export interface PhotoConfig {
   images: PhotoImage[];
+  intervalSec: number;
+  fit: 'cover' | 'contain';
+  kenBurns: boolean;
+  showCaption: boolean;
+  captionPosition: 'bottom' | 'top';
+}
+
+export interface StudentArtItem {
+  id: string;
+  url: string;
+  caption: string;
+  name?: string;
+  width?: number;
+  height?: number;
+  bytes?: number;
+  cdnId?: string;
+  createdAt: number;
+}
+
+export interface StudentArtConfig {
   intervalSec: number;
   fit: 'cover' | 'contain';
   kenBurns: boolean;

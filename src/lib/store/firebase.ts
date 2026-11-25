@@ -11,7 +11,7 @@ import {
   setDoc,
   type Firestore,
 } from 'firebase/firestore';
-import type { Announcement, Asset, BoardConfig, Command, ScheduleMeta, Screen } from '@shared/types';
+import type { Announcement, Asset, BoardConfig, Command, ScheduleMeta, Screen, StudentArtItem } from '@shared/types';
 import { mergeBoardConfig } from '@shared/merge';
 import { newId } from '@shared/ids';
 import type { BoardStore, SaveOptions, Unsubscribe } from './types';
@@ -257,6 +257,20 @@ export class FirebaseStore implements BoardStore {
 
   async deleteAsset(id: string) {
     await deleteDoc(doc(this.boardDoc(), 'assets', id));
+  }
+
+  subscribeStudentArt(cb: (items: StudentArtItem[]) => void): Unsubscribe {
+    return onSnapshot(collection(this.boardDoc(), 'studentArt'), (snap) => {
+      cb(snap.docs.map((d) => ({ ...(d.data() as StudentArtItem), id: d.id })));
+    });
+  }
+
+  async saveStudentArt(item: StudentArtItem) {
+    await setDoc(doc(this.boardDoc(), 'studentArt', item.id), clean(item));
+  }
+
+  async deleteStudentArt(id: string) {
+    await deleteDoc(doc(this.boardDoc(), 'studentArt', id));
   }
 
   subscribeScheduleMeta(cb: (meta: ScheduleMeta | null) => void): Unsubscribe {

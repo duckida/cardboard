@@ -41,6 +41,14 @@ export const photoSchema = z.object({
   captionPosition: z.enum(['bottom', 'top']).default('bottom'),
 });
 
+export const studentArtSchema = z.object({
+  intervalSec: z.number().min(3).max(3600).default(12),
+  fit: z.enum(['cover', 'contain']).default('cover'),
+  kenBurns: z.boolean().default(true),
+  showCaption: z.boolean().default(true),
+  captionPosition: z.enum(['bottom', 'top']).default('bottom'),
+});
+
 export const imageSchema = z.object({
   url: z.string().default(''),
   caption: z.string().default(''),
@@ -102,6 +110,7 @@ export const cardSchemas: Record<CardType, z.ZodTypeAny> = {
   sports: sportsSchema,
   markdown: markdownSchema,
   countdown: countdownSchema,
+  studentArt: studentArtSchema,
 };
 
 export const CARD_TYPES = Object.keys(cardSchemas) as CardType[];

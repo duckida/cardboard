@@ -304,6 +304,57 @@ function CardContentFields({
         </>
       );
 
+    case 'studentArt':
+      return (
+        <>
+          <div className="rounded-2xl bg-[#faf8f3] p-3 text-[12px] leading-relaxed text-muted">
+            <div className="font-semibold text-ink">Student artwork</div>
+            <div className="mt-1">
+              Art teachers add and manage photos in their Student Art account. This card cycles through everything they’ve uploaded.
+            </div>
+          </div>
+          <Field label="Time each photo">
+            <Select value={String(cfg.intervalSec ?? 12)} onChange={(event) => set('intervalSec', Number(event.target.value))}>
+              {[5, 8, 10, 15, 20, 30, 45, 60, 120].map((seconds) => (
+                <option key={seconds} value={seconds}>
+                  {seconds < 60 ? `${seconds} seconds` : `${seconds / 60} minute${seconds === 60 ? '' : 's'}`}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="How photos fit">
+            <Segmented
+              value={cfg.fit === 'contain' ? 'contain' : 'cover'}
+              onChange={(value) => set('fit', value)}
+              ariaLabel="How photos fit"
+              options={[
+                { value: 'cover', label: 'Fill the card' },
+                { value: 'contain', label: 'Show the whole photo' },
+              ]}
+            />
+          </Field>
+          <ToggleRow label="Slow gentle zoom" checked={cfg.kenBurns !== false} onChange={(value) => set('kenBurns', value)} />
+          <ToggleRow
+            label="Show captions"
+            checked={cfg.showCaption !== false}
+            onChange={(value) => set('showCaption', value)}
+          />
+          {cfg.showCaption !== false ? (
+            <Field label="Caption position">
+              <Segmented
+                value={cfg.captionPosition === 'top' ? 'top' : 'bottom'}
+                onChange={(value) => set('captionPosition', value)}
+                ariaLabel="Caption position"
+                options={[
+                  { value: 'bottom', label: 'Bottom' },
+                  { value: 'top', label: 'Top' },
+                ]}
+              />
+            </Field>
+          ) : null}
+        </>
+      );
+
     case 'image':
       return (
         <>

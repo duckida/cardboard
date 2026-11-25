@@ -47,23 +47,44 @@ export function getDb(): Firestore {
   return cachedDb;
 }
 
-function isAdminToken(decoded: DecodedIdToken): boolean {
-  if (decoded.role === 'admin') return true;
+export type UserRole = 'admin' | 'studentArt';
+
+export function getUserRole(decoded: DecodedIdToken): UserRole | null {
+  if (decoded.role === 'admin') return 'admin';
   const adminEmail = process.env.ADMIN_EMAIL;
-  return Boolean(adminEmail) && decoded.email === adminEmail;
+  if (adminEmail && decoded.email === adminEmail) return 'admin';
+  if (decoded.role === 'studentArt') return 'studentArt';
+  return null;
 }
 
-export async function requireAdmin(req: VercelRequest): Promise<DecodedIdToken> {
+function isAdminToken(decoded: DecodedIdToken): boolean {
+  return getUserRole(decoded) === 'admin';
+}
+
+async function requireDecodedUser(req: VercelRequest): Promise<DecodedIdToken> {
   const token = bearerToken(req);
   if (!token) throw new HttpError(401, 'Sign in to continue.', 'missing_token');
   try {
-    const decoded = await getAuth(getAdminApp()).verifyIdToken(token);
-    if (!isAdminToken(decoded)) {
-      throw new HttpError(403, 'That account is not an admin.', 'not_admin');
-    }
-    return decoded;
+    return await getAuth(getAdminApp()).verifyIdToken(token);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError(401, 'Your session expired. Sign in again.', 'invalid_token');
   }
+}
+
+export async function requireAdmin(req: VercelRequest): Promise<DecodedIdToken> {
+  const decoded = await requireDecodedUser(req);
+  if (!isAdminToken(decoded)) {
+    throw new HttpError(403, 'That account is not an admin.', 'not_admin');
+  }
+  return decoded;
+}
+
+export async function requireRole(req: VercelRequest, roles: UserRole[]): Promise<DecodedIdToken> {
+  const decoded = await requireDecodedUser(req);
+  const role = getUserRole(decoded);
+  if (!role || !roles.includes(role)) {
+    throw new HttpError(403, 'That account does not have access.', 'forbidden');
+  }
+  return decoded;
 }

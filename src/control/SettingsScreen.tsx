@@ -13,6 +13,7 @@ import {
   Trash2,
   Trophy,
   Upload,
+  UserPlus,
   UserRound,
 } from 'lucide-react';
 import type { Background, Settings, Theme } from '@shared/types';
@@ -103,6 +104,9 @@ export function SettingsScreen() {
   const [showColours, setShowColours] = useState(false);
   const [showFonts, setShowFonts] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const [artTeacherEmail, setArtTeacherEmail] = useState('');
+  const [artTeacherPassword, setArtTeacherPassword] = useState('');
+  const [artTeacherBusy, setArtTeacherBusy] = useState(false);
 
   if (!config) return null;
   const settings = config.settings;
@@ -255,6 +259,41 @@ export function SettingsScreen() {
     if (!ok) return;
     resetLocalDemo();
     window.location.reload();
+  };
+
+  const createArtTeacher = async () => {
+    const nextEmail = artTeacherEmail.trim().toLowerCase();
+    if (!nextEmail) {
+      toast('Enter an email address.', 'error');
+      return;
+    }
+    if (artTeacherPassword.length < 6) {
+      toast('Password must be at least 6 characters.', 'error');
+      return;
+    }
+    if (DEMO) {
+      toast('Demo mode does not create real accounts.', 'info');
+      return;
+    }
+    setArtTeacherBusy(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('Please sign in again.');
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: nextEmail, password: artTeacherPassword, role: 'studentArt' }),
+      });
+      const json = (await response.json().catch(() => ({}))) as { error?: string; created?: boolean; email?: string };
+      if (!response.ok) throw new Error(json.error || `Could not create that account (${response.status}).`);
+      toast(json.created ? `Art teacher account created for ${json.email ?? nextEmail}.` : `Art teacher access updated for ${json.email ?? nextEmail}.`, 'success');
+      setArtTeacherEmail('');
+      setArtTeacherPassword('');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not create that account.', 'error');
+    } finally {
+      setArtTeacherBusy(false);
+    }
   };
 
   const fontOptions = Object.entries(FONT_STACKS);
@@ -690,6 +729,46 @@ export function SettingsScreen() {
         <p className="text-[12px] leading-relaxed text-muted">
           Restoring replaces everything on the board. The file is checked on the way in and anything unusual is
           corrected automatically.
+        </p>
+      </SettingsBlock>
+
+      <SettingsBlock
+        icon={<UserPlus size={19} />}
+        title="Art teacher accounts"
+        description="Create accounts for art teachers so they can upload and manage Student Art photos and captions."
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Email address">
+            <Input
+              type="email"
+              autoComplete="off"
+              value={artTeacherEmail}
+              onChange={(event) => setArtTeacherEmail(event.target.value)}
+              placeholder="teacher@school.org"
+            />
+          </Field>
+          <Field label="Temporary password" help="At least 6 characters. The art teacher can be given this password to sign in.">
+            <Input
+              type="password"
+              autoComplete="new-password"
+              value={artTeacherPassword}
+              onChange={(event) => setArtTeacherPassword(event.target.value)}
+              placeholder="At least 6 characters"
+            />
+          </Field>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => void createArtTeacher()}
+            disabled={artTeacherBusy || !artTeacherEmail.trim() || artTeacherPassword.length < 6}
+          >
+            <UserPlus size={15} />
+            {artTeacherBusy ? 'Creating…' : 'Create art teacher account'}
+          </Button>
+        </div>
+        <p className="text-[12px] leading-relaxed text-muted">
+          Art teacher accounts can only upload and manage Student Art. They cannot change pages, screens, notices, or settings.
         </p>
       </SettingsBlock>
 

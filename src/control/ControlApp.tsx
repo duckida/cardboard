@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useBoard } from '@/lib/board';
 import { useAuth } from '@/lib/auth';
+import { StudentArtScreen } from './StudentArtScreen';
 import { DEMO } from '@/lib/store';
 import { cn } from '@/lib/cn';
 import { Badge, Button, IconButton } from '@/components/ui';
@@ -78,7 +79,7 @@ function ControlShell() {
     createBoard,
     saveNow,
   } = useBoard();
-  const { signOut } = useAuth();
+  const { signOut, role } = useAuth();
   const [tab, setTab] = useState<Tab>('pages');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
 
@@ -91,6 +92,7 @@ function ControlShell() {
   }, [config, editingPageId]);
 
   if (loading) return <LoadingScreen />;
+  if (role === 'studentArt') return <StudentArtScreen />;
 
   if (!config) {
     return (

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { HttpError, methodNotAllowed, sendError } from './_lib/http.js';
-import { requireAdmin } from './_lib/firebaseAdmin.js';
+import { requireRole } from './_lib/firebaseAdmin.js';
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif', 'image/avif']);
@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
 
   try {
-    await requireAdmin(req);
+    await requireRole(req, ['admin', 'studentArt']);
 
     const key = process.env.HACKCLUB_CDN_KEY;
     if (!key) {

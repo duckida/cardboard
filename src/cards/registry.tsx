@@ -5,6 +5,7 @@ import {
   Frame,
   Image,
   Images,
+  Palette,
   Quote,
   Timer,
   Trophy,
@@ -24,6 +25,7 @@ import { MarkdownCard } from './MarkdownCard';
 import { ScheduleCard } from './ScheduleCard';
 import { SportsCard } from './SportsCard';
 import { CountdownCard } from './CountdownCard';
+import { StudentArtCard } from './StudentArtCard';
 
 export interface CardDef {
   type: CardType;
@@ -144,6 +146,37 @@ export const CARD_DEFS: Record<CardType, CardDef> = {
       },
     ],
     Component: PhotoCard,
+  },
+  studentArt: {
+    type: 'studentArt',
+    name: 'Student Art',
+    description: "Cycles through student artwork uploaded by art teachers.",
+    icon: Palette,
+    defaultSize: { w: 14, h: 10 },
+    fields: [
+      { key: 'intervalSec', label: 'Seconds per photo', type: 'number', min: 3, max: 3600 },
+      {
+        key: 'fit',
+        label: 'Fit',
+        type: 'select',
+        options: [
+          { value: 'cover', label: 'Fill' },
+          { value: 'contain', label: 'Contain' },
+        ],
+      },
+      { key: 'kenBurns', label: 'Slow zoom', type: 'toggle' },
+      { key: 'showCaption', label: 'Show captions', type: 'toggle' },
+      {
+        key: 'captionPosition',
+        label: 'Caption position',
+        type: 'select',
+        options: [
+          { value: 'bottom', label: 'Bottom' },
+          { value: 'top', label: 'Top' },
+        ],
+      },
+    ],
+    Component: StudentArtCard,
   },
   image: {
     type: 'image',

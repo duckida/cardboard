@@ -28,6 +28,7 @@ export const CARD_TITLES: Record<Card['type'], string> = {
   schedule: 'Timetable',
   sports: 'Sports fixtures',
   countdown: 'Countdown',
+  studentArt: 'Student Art',
 };
 
 export function cardLabel(card: Card): string {
@@ -35,6 +36,8 @@ export function cardLabel(card: Card): string {
   switch (card.type) {
     case 'photo':
       return config.images?.[0]?.caption?.trim() || 'Photo slideshow';
+    case 'studentArt':
+      return 'Student Art';
     case 'image':
       return config.caption?.trim() || 'Photo';
     case 'video':
@@ -77,6 +80,10 @@ export function cardSummary(card: Card): string {
       if (!count) return 'No photos yet';
       const seconds = Math.max(3, Number(config.intervalSec) || 12);
       return `${count} photo${count === 1 ? '' : 's'} · ${seconds}s each`;
+    }
+    case 'studentArt': {
+      const seconds = Math.max(3, Number(config.intervalSec) || 12);
+      return `Student artwork · ${seconds}s each`;
     }
     case 'image':
       return config.url ? 'One photo' : 'No photo yet';

@@ -3,7 +3,7 @@ import { useAuth } from '@/lib/auth';
 import { Login } from './Login';
 
 export function RequireAdmin({ children }: { children: ReactNode }) {
-  const { isAdmin, loading } = useAuth();
+  const { role, loading } = useAuth();
 
   if (loading) {
     return (
@@ -13,6 +13,6 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!isAdmin) return <Login />;
+  if (!role) return <Login />;
   return <>{children}</>;
 }

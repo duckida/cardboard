@@ -3,6 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function isAdmin() { return signedIn() && request.auth.token.role == 'admin'; }
+    function isStudentArt() { return signedIn() && request.auth.token.role == 'studentArt'; }
 
     match /boards/{boardId} {
       // Public screens: anyone with the URL can read the board.
@@ -17,6 +18,11 @@ service cloud.firestore {
       match /assets/{id} {
         allow read: if true;
         allow write: if isAdmin();
+      }
+
+      match /studentArt/{id} {
+        allow read: if true;
+        allow write: if isAdmin() || isStudentArt();
       }
 
       match /screens/{id} {

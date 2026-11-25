@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui';
 import { CARD_TITLES } from './common';
 
 const GROUPS: { title: string; types: CardType[] }[] = [
-  { title: 'Photos & video', types: ['photo', 'image', 'video'] },
+  { title: 'Photos & video', types: ['photo', 'image', 'video', 'studentArt'] },
   { title: 'Everyday information', types: ['clock', 'weather', 'schedule', 'sports', 'countdown', 'quote'] },
   { title: 'Your own content', types: ['markdown', 'iframe'] },
 ];
@@ -13,6 +13,7 @@ const DESCRIPTIONS: Record<CardType, string> = {
   photo: 'A set of photos that take turns.',
   image: 'A single picture, with an optional caption.',
   video: 'A short video that plays on a loop.',
+  studentArt: "Student artwork that takes turns on the screen.",
   clock: 'The time and date.',
   weather: 'Today and the next few days.',
   schedule: 'Events from your school calendar.',

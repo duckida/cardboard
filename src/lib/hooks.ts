@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Announcement, Asset, ScheduleMeta, Screen } from '@shared/types';
+import type { Announcement, Asset, ScheduleMeta, Screen, StudentArtItem } from '@shared/types';
 import { getStore } from './store';
 
 export function useScreens(): Screen[] {
@@ -17,6 +17,12 @@ export function useAnnouncements(): Announcement[] {
 export function useAssets(): Asset[] {
   const [items, setItems] = useState<Asset[]>([]);
   useEffect(() => getStore().subscribeAssets(setItems), []);
+  return items;
+}
+
+export function useStudentArt(): StudentArtItem[] {
+  const [items, setItems] = useState<StudentArtItem[]>([]);
+  useEffect(() => getStore().subscribeStudentArt(setItems), []);
   return items;
 }
 

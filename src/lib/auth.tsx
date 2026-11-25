@@ -20,9 +20,12 @@ const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || 'cardboard';
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || '';
 const DEMO_AUTH_KEY = 'cb.demoAuth';
 
+export type UserRole = 'admin' | 'studentArt';
+
 interface AuthContextValue {
   user: User | null;
   email: string | null;
+  role: UserRole | null;
   isAdmin: boolean;
   loading: boolean;
   mode: 'firebase' | 'demo';
@@ -34,11 +37,19 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function roleFromClaims(claims: Record<string, unknown>, email: string | null): UserRole | null {
+  if (claims.role === 'admin') return 'admin';
+  if (Boolean(ADMIN_EMAIL) && email === ADMIN_EMAIL) return 'admin';
+  if (claims.role === 'studentArt') return 'studentArt';
+  return null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(DEMO ? localStorage.getItem(DEMO_AUTH_KEY) === '1' : false);
+  const [role, setRole] = useState<UserRole | null>(DEMO && localStorage.getItem(DEMO_AUTH_KEY) === '1' ? 'admin' : null);
   const [loading, setLoading] = useState(!DEMO);
   const [error, setError] = useState<string | null>(null);
+  const isAdmin = role === 'admin';
 
   useEffect(() => {
     if (DEMO || !auth) {
@@ -48,17 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return onAuthStateChanged(auth, async (next) => {
       setUser(next);
       if (!next) {
-        setIsAdmin(false);
+        setRole(null);
         setLoading(false);
         return;
       }
       try {
         const token = await next.getIdTokenResult(true);
-        const claimAdmin = token.claims.role === 'admin';
-        const emailAdmin = Boolean(ADMIN_EMAIL) && next.email === ADMIN_EMAIL;
-        setIsAdmin(claimAdmin || emailAdmin);
+        setRole(roleFromClaims(token.claims as Record<string, unknown>, next.email ?? null));
       } catch {
-        setIsAdmin(false);
+        setRole(null);
       } finally {
         setLoading(false);
       }
@@ -71,19 +80,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (DEMO) {
         if (password !== DEMO_PASSWORD) throw new Error('That password is not right.');
         localStorage.setItem(DEMO_AUTH_KEY, '1');
-        setIsAdmin(true);
+        setRole('admin');
         return;
       }
       if (!auth) throw new Error('Firebase is not configured.');
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const token = await cred.user.getIdTokenResult(true);
-      const claimAdmin = token.claims.role === 'admin';
-      const emailAdmin = Boolean(ADMIN_EMAIL) && cred.user.email === ADMIN_EMAIL;
-      if (!claimAdmin && !emailAdmin) {
+      const nextRole = roleFromClaims(token.claims as Record<string, unknown>, cred.user.email ?? null);
+      if (!nextRole) {
         await firebaseSignOut(auth);
-        throw new Error('That account is not an admin. Set the role claim first.');
+        throw new Error('That account does not have access. Ask an admin to set up your account.');
       }
-      setIsAdmin(true);
+      setRole(nextRole);
     },
     [],
   );
@@ -91,11 +99,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     if (DEMO) {
       localStorage.removeItem(DEMO_AUTH_KEY);
-      setIsAdmin(false);
+      setRole(null);
       return;
     }
     if (auth) await firebaseSignOut(auth);
-    setIsAdmin(false);
+    setRole(null);
   }, []);
 
   const getToken = useCallback(async () => {
@@ -108,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       email: user?.email ?? null,
+      role,
       isAdmin,
       loading,
       mode: DEMO ? 'demo' : 'firebase',
@@ -124,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       getToken,
     }),
-    [user, isAdmin, loading, error, signIn, signOut, getToken],
+    [user, role, isAdmin, loading, error, signIn, signOut, getToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,6 +6,7 @@ import type {
   ScheduleMeta,
   Screen,
   ScreenMeta,
+  StudentArtItem,
 } from '@shared/types';
 
 export type Unsubscribe = () => void;
@@ -49,6 +50,10 @@ export interface BoardStore {
   subscribeAssets(cb: (items: Asset[]) => void): Unsubscribe;
   saveAsset(asset: Asset): Promise<void>;
   deleteAsset(id: string): Promise<void>;
+
+  subscribeStudentArt(cb: (items: StudentArtItem[]) => void): Unsubscribe;
+  saveStudentArt(item: StudentArtItem): Promise<void>;
+  deleteStudentArt(id: string): Promise<void>;
 
   subscribeScheduleMeta(cb: (meta: ScheduleMeta | null) => void): Unsubscribe;
   setScheduleMeta(meta: ScheduleMeta): Promise<void>;
