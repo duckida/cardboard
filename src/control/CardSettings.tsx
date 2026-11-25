@@ -414,17 +414,6 @@ function CardContentFields({
     case 'sports':
       return (
         <>
-          <Field
-            label="Sports calendar link"
-            help="Paste the sports calendar page from your school’s sports website, for example https://sports.example.org/Calendar.asp?Id=2272"
-          >
-            <Input
-              value={cfg.url ?? ''}
-              onChange={(event) => set('url', event.target.value)}
-              placeholder="https://sports.example.org/Calendar.asp?Id=2272"
-              type="url"
-            />
-          </Field>
           <Field label="Heading">
             <Input value={cfg.title ?? ''} onChange={(event) => set('title', event.target.value)} placeholder="e.g. Fixtures" />
           </Field>
@@ -460,9 +449,12 @@ function CardContentFields({
             <div className="flex items-start gap-2.5">
               <CalendarDays size={17} className="mt-0.5 shrink-0 text-muted" />
               <p className="text-[12px] leading-relaxed text-muted">
-                Fixtures are read from the sports calendar page. If nothing appears, check the link opens in a normal browser.
+                The sports calendar link is set once in Settings. Fixtures are read from that page.
               </p>
             </div>
+            <Button size="sm" variant="secondary" className="mt-2.5" onClick={onOpenSettings}>
+              Open sports settings
+            </Button>
           </div>
         </>
       );

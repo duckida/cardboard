@@ -245,7 +245,6 @@ export const CARD_DEFS: Record<CardType, CardDef> = {
     icon: Trophy,
     defaultSize: { w: 10, h: 10 },
     fields: [
-      { key: 'url', label: 'Sports calendar link', type: 'url', placeholder: 'https://…/Calendar.asp?Id=…' },
       { key: 'title', label: 'Heading', type: 'text' },
       { key: 'daysAhead', label: 'Days ahead', type: 'number', min: 1, max: 60 },
       { key: 'maxFixtures', label: 'Max fixtures', type: 'number', min: 1, max: 40 },

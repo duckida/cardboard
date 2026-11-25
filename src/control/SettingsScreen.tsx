@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Sparkles,
   Trash2,
+  Trophy,
   Upload,
   UserRound,
 } from 'lucide-react';
@@ -98,6 +99,7 @@ export function SettingsScreen() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [feedBusy, setFeedBusy] = useState(false);
+  const [sportsBusy, setSportsBusy] = useState(false);
   const [showColours, setShowColours] = useState(false);
   const [showFonts, setShowFonts] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
@@ -170,6 +172,53 @@ export function SettingsScreen() {
       s.calendar.url = '';
     });
     toast('Calendar removed.', 'success');
+  };
+
+  const probeSports = async () => {
+    const url = settings.sports.url.trim();
+    if (!url) {
+      toast('Paste your sports calendar link first.', 'error');
+      return;
+    }
+    if (DEMO) {
+      toast('Demo mode uses sample fixtures instead of a real sports calendar.', 'info');
+      return;
+    }
+    setSportsBusy(true);
+    try {
+      const params = new URLSearchParams({ days: '30', url });
+      const response = await fetch(`/api/sports?${params.toString()}`);
+      const json = (await response.json().catch(() => ({}))) as {
+        fixtures?: unknown;
+        error?: unknown;
+      };
+      if (!response.ok) {
+        throw new Error(String(json.error || `That link could not be read (${response.status}).`));
+      }
+      const count = Array.isArray(json.fixtures) ? json.fixtures.length : 0;
+      toast(
+        `Sports calendar works — found ${count} fixture${count === 1 ? '' : 's'} in the next 30 days.`,
+        'success',
+      );
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'That sports calendar link could not be read.', 'error');
+    } finally {
+      setSportsBusy(false);
+    }
+  };
+
+  const removeSports = async () => {
+    const ok = await confirm({
+      title: 'Remove the sports calendar?',
+      body: 'Sports cards will stop updating until you add a link again.',
+      confirmLabel: 'Remove sports calendar',
+      destructive: true,
+    });
+    if (!ok) return;
+    patchSettings((s) => {
+      s.sports.url = '';
+    });
+    toast('Sports calendar removed.', 'success');
   };
 
   const exportJson = () => {
@@ -568,6 +617,47 @@ export function SettingsScreen() {
           </Button>
           {settings.calendar.url.trim() ? (
             <Button size="sm" variant="ghost" onClick={() => void removeFeed()} className="hover:text-danger">
+              <Trash2 size={14} /> Remove
+            </Button>
+          ) : null}
+        </div>
+      </SettingsBlock>
+
+      <SettingsBlock
+        icon={<Trophy size={19} />}
+        title="Sports calendar"
+        description="Add your sports fixtures link once and sports cards fill in automatically."
+      >
+        <div className="rounded-2xl bg-[#faf8f3] px-3.5 py-3 text-[12px] leading-relaxed text-muted">
+          Paste the sports calendar page from your school’s sports website. It usually looks like{' '}
+          <code className="rounded bg-white px-1 py-0.5 text-[11px] text-ink">…/Calendar.asp?Id=…</code>. Paste it as
+          it is.
+        </div>
+        <Field label="Sports calendar link">
+          <Input
+            type="url"
+            autoComplete="off"
+            value={settings.sports.url}
+            placeholder="https://…/Calendar.asp?Id=…"
+            onChange={(event) =>
+              patchSettings((s) => {
+                s.sports.url = event.target.value;
+              })
+            }
+          />
+        </Field>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => void probeSports()}
+            disabled={sportsBusy || !settings.sports.url.trim()}
+          >
+            <RefreshCw size={14} className={sportsBusy ? 'animate-spin' : undefined} />
+            {sportsBusy ? 'Checking…' : 'Test the link'}
+          </Button>
+          {settings.sports.url.trim() ? (
+            <Button size="sm" variant="ghost" onClick={() => void removeSports()} className="hover:text-danger">
               <Trash2 size={14} /> Remove
             </Button>
           ) : null}

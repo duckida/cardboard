@@ -177,6 +177,9 @@ export function normalizeBoardConfig(raw: unknown): BoardConfig {
     calendar: {
       url: typeof s.calendar?.url === 'string' ? s.calendar.url : (typeof s.calendarUrl === 'string' ? s.calendarUrl : ''),
     },
+    sports: {
+      url: typeof s.sports?.url === 'string' ? s.sports.url : (typeof s.sportsUrl === 'string' ? s.sportsUrl : ''),
+    },
   };
 
   if (!pages.some((p) => p.id === settings.defaultPageId)) settings.defaultPageId = pages[0].id;

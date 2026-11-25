@@ -102,6 +102,7 @@ export interface Settings {
   maintenance: { reloadAt: string | null; blankOutsideHours: boolean };
   lowPower: boolean;
   calendar: { url: string };
+  sports: { url: string };
 }
 
 export interface BoardConfig {
@@ -272,7 +273,6 @@ export interface SportsFixture {
 }
 
 export interface SportsConfig {
-  url: string;
   daysAhead: number;
   maxFixtures: number;
   showTeam: boolean;

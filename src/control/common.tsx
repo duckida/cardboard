@@ -99,7 +99,6 @@ export function cardSummary(card: Card): string {
       return `Next ${days} day${days === 1 ? '' : 's'}`;
     }
     case 'sports': {
-      if (!config.url) return 'No sports calendar yet';
       const days = Number(config.daysAhead) || 14;
       return `Next ${days} day${days === 1 ? '' : 's'}`;
     }

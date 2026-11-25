@@ -188,6 +188,7 @@ export function defaultBoard(): BoardConfig {
     maintenance: { reloadAt: '03:30', blankOutsideHours: false },
     lowPower: false,
     calendar: { url: '' },
+    sports: { url: '' },
   };
 
   return {

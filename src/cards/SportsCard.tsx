@@ -41,6 +41,7 @@ export function SportsCard({ card }: { card: Card }) {
   const boardConfig = useBoard().config;
   const timezone = boardConfig?.settings.timezone ?? '';
   const locale = boardConfig?.settings.locale ?? 'en-GB';
+  const sportsUrl = boardConfig?.settings.sports.url ?? '';
   const [state, setState] = useState<Response | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -51,7 +52,7 @@ export function SportsCard({ card }: { card: Card }) {
         setState({ fixtures: demoSports(cfg.daysAhead), configured: true });
         return;
       }
-      if (!cfg.url.trim()) {
+      if (!sportsUrl.trim()) {
         setState({ fixtures: [], configured: false });
         setFailed(false);
         return;
@@ -59,7 +60,7 @@ export function SportsCard({ card }: { card: Card }) {
       try {
         const params = new URLSearchParams({
           days: String(cfg.daysAhead),
-          url: cfg.url.trim(),
+          url: sportsUrl.trim(),
         });
         const response = await fetch(`/api/sports?${params.toString()}`);
         if (!response.ok) throw new Error('sports');
@@ -81,7 +82,7 @@ export function SportsCard({ card }: { card: Card }) {
       alive = false;
       window.clearInterval(timer);
     };
-  }, [cfg.daysAhead, cfg.url]);
+  }, [cfg.daysAhead, sportsUrl]);
 
   const fixtures = useMemo(
     () => (state?.fixtures ?? []).slice(0, Math.max(1, cfg.maxFixtures || 8)),
@@ -102,7 +103,7 @@ export function SportsCard({ card }: { card: Card }) {
     return (
       <div className="cb-schedule">
         <div className="cb-eyebrow">{cfg.title || 'Fixtures'}</div>
-        <div className="cb-muted">Add a sports calendar link in this card’s settings.</div>
+        <div className="cb-muted">Sports calendar not configured. Add a link in Control → Settings.</div>
       </div>
     );
   }

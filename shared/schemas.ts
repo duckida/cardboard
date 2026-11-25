@@ -73,7 +73,6 @@ export const scheduleSchema = z.object({
 });
 
 export const sportsSchema = z.object({
-  url: z.string().default(''),
   daysAhead: z.number().min(1).max(60).default(14),
   maxFixtures: z.number().min(1).max(40).default(8),
   showTeam: z.boolean().default(true),
