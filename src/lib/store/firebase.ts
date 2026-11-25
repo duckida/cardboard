@@ -7,12 +7,14 @@ import {
   doc,
   getDoc,
   onSnapshot,
+  runTransaction,
   setDoc,
   type Firestore,
 } from 'firebase/firestore';
 import type { Announcement, Asset, BoardConfig, Command, ScheduleMeta, Screen } from '@shared/types';
+import { mergeBoardConfig } from '@shared/merge';
 import { newId } from '@shared/ids';
-import type { BoardStore, Unsubscribe } from './types';
+import type { BoardStore, SaveOptions, Unsubscribe } from './types';
 import { blobToBase64, compressImage } from '../image';
 
 function clean<T>(value: T): T {
@@ -20,8 +22,20 @@ function clean<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+function isOfflineError(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code;
+  return (
+    code === 'unavailable' ||
+    code === 'deadline-exceeded' ||
+    (typeof navigator !== 'undefined' && navigator.onLine === false)
+  );
+}
+
 export class FirebaseStore implements BoardStore {
   mode = 'firebase' as const;
+
+  /** The last board the listener saw, used as a fallback merge base. */
+  private lastRemote: BoardConfig | null = null;
 
   constructor(
     private db: Firestore,
@@ -45,13 +59,108 @@ export class FirebaseStore implements BoardStore {
   subscribeConfig(cb: (config: BoardConfig | null) => void): Unsubscribe {
     return onSnapshot(
       this.boardDoc(),
-      (snap) => cb(snap.exists() ? (snap.data() as BoardConfig) : null),
-      () => cb(null),
+      (snap) => {
+        if (!snap.exists()) {
+          // An empty local cache is not proof that the board is gone. Waiting
+          // for the server snapshot avoids showing "create a board" to someone
+          // whose only problem is a cold cache or a slow connection.
+          if (snap.metadata.fromCache) return;
+          this.lastRemote = null;
+          cb(null);
+          return;
+        }
+        const remote = snap.data() as BoardConfig;
+        this.lastRemote = remote;
+        cb(remote);
+      },
+      // Keep whatever we already have on a transient listener error instead
+      // of reporting that the board disappeared.
+      () => {},
     );
   }
 
-  async saveConfig(config: BoardConfig) {
-    await setDoc(this.boardDoc(), clean({ ...config, updatedAt: Date.now() }));
+  async saveConfig(config: BoardConfig, options?: SaveOptions): Promise<BoardConfig> {
+    const next = clean({ ...config, updatedAt: Date.now() });
+    const ref = this.boardDoc();
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+
+    if (options?.replace || offline) {
+      // A transaction needs a server round trip; offline edits still queue.
+      await setDoc(ref, next);
+      this.lastRemote = next;
+      return next;
+    }
+
+    try {
+      const written = await runTransaction(this.db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists()) {
+          tx.set(ref, next);
+          return next;
+        }
+        const remote = snap.data() as BoardConfig;
+        const base = options?.base ?? this.lastRemote;
+        const merged =
+          base && Number(remote.version) > Number(base.version)
+            ? clean(mergeBoardConfig(base, next, remote))
+            : next;
+        // Always move the version past what the server currently has so the
+        // next reader (and our own stale snapshots) can tell which is newer.
+        const version = Math.max(Number(merged.version) || 1, Number(remote.version) || 1) + 1;
+        const toWrite = clean({ ...merged, version, updatedAt: Date.now() });
+        tx.set(ref, toWrite);
+        return toWrite;
+      });
+      this.lastRemote = written;
+      return written;
+    } catch (error) {
+      if (!isOfflineError(error)) throw error;
+      // Transactions need a server round trip. Offline edits still have to
+      // queue locally, so fall back to a normal write and reconcile later.
+      await setDoc(ref, next);
+      this.lastRemote = next;
+      return next;
+    }
+  }
+
+  async ensureBoard(board: BoardConfig): Promise<BoardConfig> {
+    const ref = this.boardDoc();
+    const next = clean(board);
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+
+    if (offline) {
+      // Never create a board we could not confirm is missing — that is how a
+      // cold cache turns into a wiped board.
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const existing = snap.data() as BoardConfig;
+        this.lastRemote = existing;
+        return existing;
+      }
+      throw new Error('You are offline. Reconnect before creating your board.');
+    }
+
+    try {
+      const existing = await runTransaction(this.db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (snap.exists()) return snap.data() as BoardConfig;
+        tx.set(ref, next);
+        return next;
+      });
+      this.lastRemote = existing;
+      return existing;
+    } catch (error) {
+      if (!isOfflineError(error)) throw error;
+      // Never create a board we could not confirm is missing — that is how a
+      // cold cache turns into a wiped board.
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const existing = snap.data() as BoardConfig;
+        this.lastRemote = existing;
+        return existing;
+      }
+      throw new Error('Could not reach the server to create the board. Check your connection and try again.');
+    }
   }
 
   subscribeAnnouncements(cb: (items: Announcement[]) => void): Unsubscribe {

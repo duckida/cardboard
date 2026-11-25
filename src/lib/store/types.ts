@@ -10,11 +10,27 @@ import type {
 
 export type Unsubscribe = () => void;
 
+export interface SaveOptions {
+  /**
+   * Replace the board wholesale (JSON restore). Skips conflict merging so a
+   * backup really does overwrite what is on the server.
+   */
+  replace?: boolean;
+  /**
+   * The server board this save was based on. Used as the merge ancestor when
+   * another device wrote in the meantime.
+   */
+  base?: BoardConfig | null;
+}
+
 export interface BoardStore {
   mode: 'firebase' | 'local';
 
   subscribeConfig(cb: (config: BoardConfig | null) => void): Unsubscribe;
-  saveConfig(config: BoardConfig): Promise<void>;
+  /** Saves the board and returns exactly what is now stored. */
+  saveConfig(config: BoardConfig, options?: SaveOptions): Promise<BoardConfig>;
+  /** Creates the board only when it does not exist; returns the board in use. */
+  ensureBoard(board: BoardConfig): Promise<BoardConfig>;
 
   subscribeAnnouncements(cb: (items: Announcement[]) => void): Unsubscribe;
   saveAnnouncement(item: Announcement): Promise<void>;

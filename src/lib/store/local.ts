@@ -1,7 +1,7 @@
 import type { Announcement, Asset, BoardConfig, Command, ScheduleMeta, Screen } from '@shared/types';
 import { defaultBoard } from '@shared/defaults';
 import { newId } from '@shared/ids';
-import type { BoardStore, Unsubscribe } from './types';
+import type { BoardStore, SaveOptions, Unsubscribe } from './types';
 import { blobToDataUrl, compressImage } from '../image';
 
 const PREFIX = 'cb.';
@@ -63,9 +63,20 @@ export class LocalStore implements BoardStore {
     return this.listen('config', () => cb(read<BoardConfig | null>('config', null)));
   }
 
-  async saveConfig(config: BoardConfig) {
-    write('config', { ...config, updatedAt: Date.now() });
+  async saveConfig(config: BoardConfig, options?: SaveOptions): Promise<BoardConfig> {
+    void options;
+    const next = { ...config, updatedAt: Date.now() };
+    write('config', next);
     this.notify('config');
+    return next;
+  }
+
+  async ensureBoard(board: BoardConfig): Promise<BoardConfig> {
+    const existing = read<BoardConfig | null>('config', null);
+    if (existing) return existing;
+    write('config', board);
+    this.notify('config');
+    return board;
   }
 
   subscribeAnnouncements(cb: (items: Announcement[]) => void): Unsubscribe {

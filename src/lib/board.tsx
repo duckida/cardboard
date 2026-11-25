@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type { BoardConfig } from '@shared/types';
 import { defaultBoard } from '@shared/defaults';
+import { mergeBoardConfig } from '@shared/merge';
 import { normalizeBoardConfig } from '@shared/normalize';
 import { getStore } from './store';
 import { useAuth } from './auth';
@@ -44,8 +45,11 @@ export function BoardProvider({ children }: { children: ReactNode }) {
   const [historyTick, setHistoryTick] = useState(0);
 
   const configRef = useRef<BoardConfig | null>(null);
+  /** The server copy the local state is based on, used for conflict merging. */
+  const baseRef = useRef<BoardConfig | null>(null);
   const pendingRef = useRef(false);
   const latestRef = useRef<BoardConfig | null>(null);
+  const savingRef = useRef(false);
   const timerRef = useRef<number | null>(null);
   const undoRef = useRef<BoardConfig[]>([]);
   const redoRef = useRef<BoardConfig[]>([]);
@@ -57,6 +61,7 @@ export function BoardProvider({ children }: { children: ReactNode }) {
       if (!raw) {
         if (!pendingRef.current) {
           configRef.current = null;
+          baseRef.current = null;
           setConfig(null);
         }
         return;
@@ -71,24 +76,60 @@ export function BoardProvider({ children }: { children: ReactNode }) {
         next = defaultBoard();
       }
       configRef.current = next;
+      baseRef.current = next;
       setConfig(next);
     });
     return unsub;
   }, [store]);
 
   const flush = useCallback(async () => {
-    const target = latestRef.current;
-    if (!target) return;
+    // One write at a time. Two overlapping whole-document writes could land
+    // out of order on a slow connection and silently undo the newest edit.
+    if (savingRef.current) return;
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (!latestRef.current) return;
+
+    savingRef.current = true;
     try {
-      await store.saveConfig(target);
-      setSaveState('saved');
-      setError(null);
-    } catch (err) {
-      setSaveState('error');
-      setError(err instanceof Error ? err.message : 'Could not save.');
+      while (latestRef.current && pendingRef.current) {
+        const target: BoardConfig = latestRef.current;
+        setSaveState('saving');
+        try {
+          const written = await store.saveConfig(target, { base: baseRef.current });
+          baseRef.current = written;
+          if (latestRef.current === target) {
+            // Another device may have changed the board while we saved; adopt
+            // the merged result so those changes appear here too.
+            if (written !== target) {
+              configRef.current = written;
+              latestRef.current = written;
+              setConfig(written);
+            }
+            pendingRef.current = false;
+            setSaveState('saved');
+            setError(null);
+          } else {
+            // Edits arrived during the save — rebase them onto what the server
+            // now holds and save again, instead of dropping either side.
+            const rebased = mergeBoardConfig(target, latestRef.current, written);
+            configRef.current = rebased;
+            latestRef.current = rebased;
+            setConfig(rebased);
+          }
+        } catch (err) {
+          setSaveState('error');
+          setError(err instanceof Error ? err.message : 'Could not save.');
+          // Leave the edit pending. It stays on screen and retries on the next
+          // change or when the connection returns instead of being replaced by
+          // the older server copy.
+          return;
+        }
+      }
     } finally {
-      if (latestRef.current === target) pendingRef.current = false;
-      else if (latestRef.current) void flush();
+      savingRef.current = false;
     }
   }, [store]);
 
@@ -150,10 +191,18 @@ export function BoardProvider({ children }: { children: ReactNode }) {
       undoRef.current = [];
       redoRef.current = [];
       bumpHistory();
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
       latestRef.current = next;
       pendingRef.current = true;
       setSaveState('saving');
-      await store.saveConfig(next);
+      const written = await store.saveConfig(next, { replace: true });
+      configRef.current = written;
+      baseRef.current = written;
+      latestRef.current = written;
+      setConfig(written);
       pendingRef.current = false;
       setSaveState('saved');
     },
@@ -162,11 +211,27 @@ export function BoardProvider({ children }: { children: ReactNode }) {
 
   const createBoard = useCallback(async () => {
     const board = defaultBoard();
-    configRef.current = board;
-    setConfig(board);
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     setSaveState('saving');
-    await store.saveConfig(board);
-    setSaveState('saved');
+    try {
+      // Only creates when the server really has no board. If one already
+      // exists (a cold cache used to look empty) we adopt it instead of
+      // overwriting pages, settings and the calendar link with defaults.
+      const active = normalizeBoardConfig(await store.ensureBoard(board));
+      configRef.current = active;
+      baseRef.current = active;
+      latestRef.current = active;
+      setConfig(active);
+      pendingRef.current = false;
+      setSaveState('saved');
+      setError(null);
+    } catch (err) {
+      setSaveState('error');
+      setError(err instanceof Error ? err.message : 'Could not create the board.');
+    }
   }, [store]);
 
   const applyHistory = useCallback(
@@ -191,6 +256,26 @@ export function BoardProvider({ children }: { children: ReactNode }) {
   const saveNow = useCallback(async () => {
     if (timerRef.current) window.clearTimeout(timerRef.current);
     await flush();
+  }, [flush]);
+
+  // Don't lose the last keystroke when someone closes the tab, switches apps
+  // or the phone locks during the 280ms debounce.
+  useEffect(() => {
+    const hide = () => {
+      if (pendingRef.current) void flush();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') hide();
+    };
+    window.addEventListener('pagehide', hide);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('online', hide);
+    return () => {
+      window.removeEventListener('pagehide', hide);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', hide);
+      if (pendingRef.current) void flush();
+    };
   }, [flush]);
 
   useEffect(() => {
