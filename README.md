@@ -53,7 +53,7 @@ The public board document is intentionally readable by unauthenticated screens. 
 
 Import the project into Vercel with the default build settings (`npm run build`, output `dist`). Configure the `VITE_FIREBASE_*` variables, `VITE_BOARD_ID`, and these server-only variables in the Vercel project settings:
 
-- `FIREBASE_SERVICE_ACCOUNT` — the service account JSON, preferably stored as one line.
+- `FIREBASE_SERVICE_ACCOUNT` — the service account JSON for the same Firebase project as `VITE_FIREBASE_PROJECT_ID`. One line, pretty-printed, quoted, or base64-encoded all work. Required for creating art teacher accounts and for uploads; without it those endpoints return a configuration error instead of pretending the session expired.
 - `ADMIN_EMAIL` — optional emergency/UI fallback; the custom claim is still recommended.
 - `HACKCLUB_CDN_KEY` — Hack Club CDN v4 bearer key for image uploads.
 
