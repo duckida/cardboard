@@ -33,34 +33,54 @@ export function useDisplayController(screenId: string | undefined, config: Board
   const [identify, setIdentify] = useState(false);
   const identifyTimer = useRef<number | null>(null);
 
+  // Per-screen custom selection: null/undefined means use the default/main selection.
+  const customPageIds = useMemo(() => {
+    if (Array.isArray(screen?.pageIds)) return screen.pageIds;
+    if (screen?.assignedPageId) return [screen.assignedPageId];
+    return null;
+  }, [screen?.pageIds, screen?.assignedPageId]);
+
+  const defaultPage = pages.find((page) => page.id === settings?.defaultPageId) ?? pages[0];
+
   const rotationPages = useMemo(() => {
     if (!settings) return pages;
-    if (!settings.rotation.enabled) return pages;
+    if (customPageIds) {
+      const included = new Set(customPageIds);
+      const selected = pages.filter((page) => included.has(page.id));
+      return selected.length > 0 ? selected : (defaultPage ? [defaultPage] : pages);
+    }
+    if (!settings.rotation.enabled) return defaultPage ? [defaultPage] : pages;
     // Rotation membership is a set; pages cycle in board order.
     const included = new Set(settings.rotation.pageIds);
-    return pages.filter((page) => included.has(page.id));
-  }, [pages, settings]);
+    const selected = pages.filter((page) => included.has(page.id));
+    return selected.length > 0 ? selected : (defaultPage ? [defaultPage] : pages);
+  }, [pages, settings, customPageIds, defaultPage]);
 
-  const assigned = screen?.assignedPageId
-    ? pages.find((page) => page.id === screen.assignedPageId)
-    : null;
-  const defaultPage = pages.find((page) => page.id === settings?.defaultPageId) ?? pages[0];
-  const rotating = Boolean(settings?.rotation.enabled) && rotationPages.length > 0;
+  const rotating = rotationPages.length > 1;
   const rotated = rotating
     ? rotationPages[rotationIndex % rotationPages.length]
-    : defaultPage;
-  const base = assigned ?? rotated ?? defaultPage ?? null;
+    : rotationPages[0] ?? defaultPage ?? null;
+  const base = rotated ?? defaultPage ?? null;
   const page = (override && pages.find((item) => item.id === override)) || base;
+
+  // Keep the rotation index in range when the page list changes.
+  useEffect(() => {
+    if (rotationPages.length === 0) {
+      if (rotationIndex !== 0) setRotationIndex(0);
+      return;
+    }
+    if (rotationIndex >= rotationPages.length) setRotationIndex(0);
+  }, [rotationPages.length, rotationIndex]);
 
   // Rotation — each page stays up for its own duration (or the default interval).
   useEffect(() => {
-    if (!settings?.rotation.enabled || assigned || override) return;
+    if (override) return;
     if (rotationPages.length < 2) return;
     const current = rotationPages[rotationIndex % rotationPages.length];
-    const seconds = Math.max(5, current?.rotationSec ?? settings.rotation.intervalSec);
+    const seconds = Math.max(5, current?.rotationSec ?? settings?.rotation.intervalSec ?? 30);
     const timer = window.setTimeout(() => setRotationIndex((index) => index + 1), seconds * 1000);
     return () => window.clearTimeout(timer);
-  }, [settings?.rotation.enabled, settings?.rotation.intervalSec, rotationPages, rotationIndex, assigned, override]);
+  }, [settings?.rotation.intervalSec, rotationPages, rotationIndex, override]);
 
   // Presence + heartbeat
   useEffect(() => {

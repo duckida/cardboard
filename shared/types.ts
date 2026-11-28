@@ -124,8 +124,16 @@ export interface ScreenMeta {
 export interface Screen {
   id: string;
   name: string;
+  /** Legacy single-page assignment. Prefer pageIds. */
   assignedPageId?: string | null;
+  /**
+   * Custom page selection for this screen, in board order.
+   * null/undefined = use the default/main selection (global rotation or start page).
+   * An array = show only these pages (rotates if more than one).
+   */
+  pageIds?: string[] | null;
   lastSeen?: number;
+  /** The page currently being displayed (reported by the screen heartbeat). */
   pageId?: string;
   meta?: ScreenMeta;
   createdAt?: number;

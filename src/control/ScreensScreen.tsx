@@ -27,9 +27,16 @@ import {
   SectionHeading,
   Select,
 } from '@/components/ui';
+import { cn } from '@/lib/cn';
 import { useFeedback } from './Feedback';
 import { MenuButton, MenuDivider, MenuItem } from './Menu';
 import { isOnline, relativeSeen } from './common';
+
+function screenCustomPageIds(screen: Screen): string[] | null {
+  if (Array.isArray(screen.pageIds)) return screen.pageIds;
+  if (screen.assignedPageId) return [screen.assignedPageId];
+  return null;
+}
 
 export function ScreensScreen() {
   const store = getStore();
@@ -176,19 +183,84 @@ export function ScreensScreen() {
 
                 <div className="space-y-4 px-5 py-4">
                   <Field label="What should this screen show?">
-                    <Select
-                      value={screen.assignedPageId ?? ''}
-                      onChange={(event) =>
-                        void store.saveScreen({ ...screen, assignedPageId: event.target.value || null })
-                      }
-                    >
-                      <option value="">Follow the page loop</option>
-                      {pages.map((page) => (
-                        <option key={page.id} value={page.id}>
-                          Always show “{page.name}”
-                        </option>
-                      ))}
-                    </Select>
+                    {(() => {
+                      const customIds = screenCustomPageIds(screen);
+                      const isCustom = customIds !== null;
+                      const selected = new Set(customIds ?? []);
+                      const setDefault = () =>
+                        void store.saveScreen({ ...screen, pageIds: null, assignedPageId: null });
+                      const setCustom = (nextIds: string[]) =>
+                        void store.saveScreen({ ...screen, pageIds: nextIds, assignedPageId: null });
+                      return (
+                        <div className="space-y-2.5">
+                          <Select
+                            value={isCustom ? '__custom__' : ''}
+                            onChange={(event) => {
+                              if (event.target.value === '__custom__') {
+                                const fallback =
+                                  config?.settings.rotation.pageIds.filter((id) =>
+                                    pages.some((page) => page.id === id),
+                                  ) ?? pages.map((page) => page.id);
+                                setCustom(fallback.length > 0 ? fallback : pages.map((page) => page.id));
+                              } else {
+                                setDefault();
+                              }
+                            }}
+                          >
+                            <option value="">Default (main selection)</option>
+                            <option value="__custom__">Choose specific pages…</option>
+                          </Select>
+
+                          {isCustom ? (
+                            <div className="rounded-xl border border-line bg-[#faf8f3] p-2">
+                              <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                                Pages on this screen
+                              </div>
+                              <div className="space-y-1">
+                                {pages.map((page) => {
+                                  const checked = selected.has(page.id);
+                                  return (
+                                    <label
+                                      key={page.id}
+                                      className={cn(
+                                        'flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-[13px] transition',
+                                        checked ? 'bg-white text-ink shadow-sm' : 'text-muted hover:bg-white/70',
+                                      )}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() => {
+                                          const next = checked
+                                            ? pages.filter((p) => p.id !== page.id && selected.has(p.id)).map((p) => p.id)
+                                            : pages.filter((p) => selected.has(p.id) || p.id === page.id).map((p) => p.id);
+                                          setCustom(next);
+                                        }}
+                                        className="h-4 w-4 rounded border-line text-accent focus:ring-accent/30"
+                                      />
+                                      <span className="min-w-0 flex-1 truncate">{page.name}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                              {selected.size === 0 ? (
+                                <p className="mt-2 px-1 text-[12px] text-amber-700">
+                                  No pages selected — this screen will fall back to the default selection.
+                                </p>
+                              ) : selected.size === 1 ? (
+                                <p className="mt-2 px-1 text-[12px] text-muted">
+                                  This screen will always show the selected page.
+                                </p>
+                              ) : (
+                                <p className="mt-2 px-1 text-[12px] text-muted">
+                                  This screen will rotate through the selected pages.
+                                </p>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })()}
                   </Field>
 
                   <div>

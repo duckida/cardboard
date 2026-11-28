@@ -144,7 +144,8 @@ type Background =
 type Screen = {
   id: string;                   // also the presence key, e.g. "kitchen-7f3a"
   name: string;                 // "Kitchen"
-  assignedPageId?: string | null;
+  assignedPageId?: string | null; // legacy single-page assignment
+  pageIds?: string[] | null;    // custom page selection; null = default/main selection
   revoked?: boolean;
   createdAt: Timestamp;
   meta?: { ua: string; width: number; height: number };
